@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOA | Store Manager</title>
+
+    <!-- External CDN links -->
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+</head>
+
+<body class="min-h-screen flex flex-col container-fixed">
+
+    <!-- Offline Indicator -->
+    <div id="offlineIndicator" class="offline-indicator no-print">
+        <i class="fas fa-wifi-slash mr-1"></i> Offline • Changes will sync when online
+    </div>
+
+    <!-- Login Page -->
+    <div id="loginPage" class="fixed inset-0 bg-surface-color flex items-center justify-center z-50">
+        <div class="login-card glass-card">
+            <div class="text-center mb-4">
+                <img src="./assets/app_logo.svg" alt="App Logo" class="w-[180px] mx-auto mb-6">
+                <h1 class="text-2xl font-extrabold text-slate-800 mb-1 tracking-tight">Store Management System</h1>
+                <p class="text-xs text-slate-500 mb-8 uppercase tracking-widest font-bold">Department of Architecture
+                </p>
+            </div>
+
+            <form id="loginForm" class="space-y-5 text-left">
+                <div>
+                    <label for="username" class="block text-sm font-bold text-slate-600 mb-2 ml-1">User
+                        ID</label>
+                    <input type="text" id="username" required class="form-input" placeholder="Enter your ID">
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-bold text-slate-600 mb-2 ml-1">Password</label>
+                    <div class="relative">
+                        <input type="password" id="password" required class="form-input pr-10" placeholder="••••••••">
+                        <button type="button" onclick="togglePasswordVisibility()"
+                            class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400">
+                            <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="loginError" class="hidden p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                    <i class="fas fa-exclamation-circle mr-2"></i> Invalid User ID or password.
+                </div>
+
+                <div class="space-y-3 pt-2">
+                    <button type="submit"
+                        class="w-full py-3.5 bg-blue-900 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-900/10 hover:opacity-90 active:scale-[0.98] transition-all">
+                        Sign In
+                    </button>
+                </div>
+            </form>
+            <div class="mt-8 text-center text-[11px] text-slate-400">
+                © <span class="current-year">2026</span> <a
+                    href="https://www.linkedin.com/in/ar-anisul?originalSubdomain=bd" target="_blank"
+                    class="footer-link">S M Anisul Haque</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup Enforcement Overlay (Blocking) -->
+    <div id="backupEnforcementOverlay"
+        class="fixed inset-0 bg-slate-900/95 backdrop-blur-md flex items-center justify-center z-[100] hidden">
+        <div class="max-w-md w-full mx-4 glass-card p-10 text-center border border-white/10 shadow-2xl">
+            <div
+                class="w-20 h-20 bg-amber-500/20 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-8 animate-pulse">
+                <i class="fas fa-shield-alt text-4xl"></i>
+            </div>
+            <h2 class="text-3xl font-extrabold text-white mb-4 tracking-tight">Security Backup Required</h2>
+            <p class="text-slate-300 mb-8 leading-relaxed">To ensure data integrity and prevent potential loss, a manual backup to JSON is mandatory every 36 hours. Your last backup was over 36 hours ago.</p>
+
+            <div class="bg-white/5 rounded-xl p-4 mb-8 border border-white/5">
+                <p class="text-[11px] uppercase tracking-widest text-slate-500 font-bold mb-1">Last Backup Detected</p>
+                <p id="lastBackupTimeDisplay" class="text-white font-mono text-sm">Loading status...</p>
+            </div>
+
+            <button onclick="exportStoreBackup()"
+                class="w-full py-4 bg-amber-500 text-slate-900 rounded-xl font-black uppercase tracking-widest hover:bg-amber-400 transition-all flex items-center justify-center gap-3 shadow-xl shadow-amber-500/20">
+                <i class="fas fa-file-download"></i>
+                Download JSON Backup Now
+            </button>
+            <p class="mt-6 text-[10px] text-slate-500 uppercase tracking-tighter">Access will be restored immediately
+                after successful backup.</p>
+        </div>
+    </div>
+
+    <!-- Main Application (Restructured for Precious fidelity) -->
+    <div id="appContainer" class="hidden flex h-screen w-full overflow-hidden no-print">
+
+        <!-- Sidebar / Navigation (Left Column) -->
+        <aside class="sidebar h-full shrink-0 border-r border-gray-800 z-30">
+            <div class="logo-container">
+                <img src="./assets/app_logo.svg" alt="App Logo" class="app-logo">
+                <div class="app-title pt-1">STORE MANAGER</div>
+            </div>
+
+            <nav class="space-y-1 pt-4 flex-grow">
+                <div class="sidebar-item active" data-tab="dashboard" id="navDashboard">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="sidebar-item" data-tab="inventory" id="navInventory">
+                    <i class="fas fa-boxes"></i>
+                    <span>Inventory</span>
+                </div>
+                <div class="sidebar-item" data-tab="employees" id="navEmployees">
+                    <i class="fas fa-users"></i>
+                    <span>Employees</span>
+                </div>
+                <div class="sidebar-item" data-tab="disbursements" id="navDisbursements">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>Disbursements & Returns</span>
+                </div>
+                <div class="sidebar-item" data-tab="saved-reports" id="navSavedReports">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Saved Reports</span>
+                </div>
+                <div class="sidebar-item" data-tab="data-storage" id="navDataStorage">
+                    <i class="fas fa-database"></i>
+                    <span>Data & Storage</span>
+                </div>
+                <div class="sidebar-item" data-tab="store-management" id="navStoreManagement">
+                    <i class="fas fa-store"></i>
+                    <span>Store Management</span>
+                </div>
+            </nav>
+            <div class="p-8">
+                <span class="text-[10px] text-white/40">System Release v2.5.0</span>
+            </div>
+        </aside>
+
+        <!-- Content Area Wrapper (Right Column) -->
+        <div class="flex-grow flex flex-col min-w-0 bg-[#f8fafc]">
+            <!-- Header (Nested inside Content Area) -->
+            <header class="app-header shadow-sm no-print border-b border-gray-200 shrink-0">
+                <div class="flex justify-between items-center w-full px-8">
+                    <div class="flex items-center">
+                        <div id="currentStoreDisplay"
+                            class="px-4 py-1.5 bg-slate-100 rounded-lg text-xs font-bold text-slate-500 border border-slate-200">
+                            <i class="fas fa-store mr-2"></i> Stationery Store
+                        </div>
+                        <!-- Store Selector -->
+                        <select id="storeSelector" class="ml-4 store-selector" onchange="switchStore(this.value)">
+                            <option value="">Switch Store...</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <div class="text-right">
+                            <p class="text-[10px] font-extrabold text-slate-400 uppercase leading-none" id="userRole">
+                                Administrator</p>
+                            <p class="text-[11px] font-bold text-slate-900" id="userName">Admin User</p>
+                        </div>
+                        <!-- User Initials Avatar -->
+                        <div id="userInitials"
+                            class="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-sm border border-slate-200">
+                            A
+                        </div>
+                        <button id="logoutBtn" onclick="handleLogout()" class="btn-logout">
+                            <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Content Area -->
+            <main id="content-area" class="flex-grow min-w-0 overflow-y-auto p-8 overflow-x-hidden">
+                <!-- Dashboard Tab -->
+                <div id="dashboard" class="tab-content">
+
+                    <!-- Stats Overview (Precision v8) -->
+                    <div id="stats-grid"
+                        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 min-h-[100px]">
+                        <!-- Dynamically populated stat cards -->
+                    </div>
+
+                    <!-- Content Panels (v8 Precision) -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 flex-grow">
+                        <!-- Analytics Section -->
+                        <div class="col-span-1 lg:col-span-2 glass-card p-10 flex flex-col">
+                            <div class="flex items-center justify-between mb-8">
+                                <h3 class="font-bold text-xl text-slate-800">Analytics</h3>
+                                <div class="flex p-1 bg-slate-100/50 rounded-xl border border-slate-200">
+                                    <button onclick="switchChart('lowStock')" id="tab-lowStock"
+                                        class="chart-tab active px-5 py-2 bg-white shadow-sm rounded-lg text-xs font-bold border border-slate-100">Low
+                                        Stock</button>
+                                    <button onclick="switchChart('consumption')" id="tab-consumption"
+                                        class="chart-tab px-5 py-2 text-xs font-bold text-slate-400">Consumption</button>
+                                    <button onclick="switchChart('trends')" id="tab-trends"
+                                        class="chart-tab px-5 py-2 text-xs font-bold text-slate-400">Trends</button>
+                                </div>
+                            </div>
+                            <div
+                                class="p-4 w-full flex-grow bg-slate-100/30 rounded-2xl border-2 border-dashed border-slate-200">
+                                <!-- Low Stock Chart -->
+                                <div id="chart-lowStock" class="chart-container active w-full" style="height: 350px;">
+                                    <canvas id="inventoryChart"></canvas>
+                                </div>
+
+                                <!-- Consumption Chart -->
+                                <div id="chart-consumption" class="chart-container w-full"
+                                    style="display: none; height: 350px;">
+                                    <canvas id="consumptionChart"></canvas>
+                                </div>
+
+                                <!-- Trends Chart -->
+                                <div id="chart-trends" class="chart-container w-full"
+                                    style="display: none; height: 350px;">
+                                    <canvas id="trendsChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="glass-card p-8 flex flex-col">
+                            <h3 class="font-bold text-lg text-slate-800 mb-8">Quick Actions</h3>
+                            <div class="space-y-4">
+                                <button onclick="showDisbursementForm()" id="dashNewDisbursementBtn"
+                                    class="w-full text-left p-4 bg-emerald-500 text-white rounded-xl flex items-center justify-between shadow-md hover:bg-emerald-600 transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-8 h-8 rounded-lg bg-emerald-400 text-white flex items-center justify-center">
+                                            <i class="fas fa-plus"></i>
+                                        </div>
+                                        <span class="text-sm font-bold shadow-sm text-white">New Disbursement</span>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-emerald-200 text-xs"></i>
+                                </button>
+                                <button onclick="showSupplyForm()" id="dashAddItemBtn"
+                                    class="w-full text-left p-4 bg-white/60 border border-slate-100 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                                            <i class="fas fa-boxes"></i>
+                                        </div>
+                                        <span class="text-sm font-bold text-slate-700">Add New Item</span>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+                                </button>
+                                <button onclick="showAddEmployeeForm()" id="dashAddEmployeeBtn"
+                                    class="w-full text-left p-4 bg-white/60 border border-slate-100 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+                                            <i class="fas fa-user-plus"></i>
+                                        </div>
+                                        <span class="text-sm font-bold text-slate-700">Add a New Employee</span>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+                                </button>
+                                <button onclick="showResupplyForm()" id="dashResupplyBtn"
+                                    class="w-full text-left p-4 bg-white/60 border border-slate-100 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                            <i class="fas fa-truck-loading"></i>
+                                        </div>
+                                        <span class="text-sm font-bold text-slate-700">New Resupply</span>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+                                </button>
+                                <button onclick="showBatchDisbursementForm()" id="dashBatchDisbursementBtn"
+                                    class="w-full text-left p-4 bg-white/60 border border-slate-100 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                                            <i class="fas fa-users-cog"></i>
+                                        </div>
+                                        <span class="text-sm font-bold text-slate-700">Batch Disburse</span>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory Tab -->
+                <div id="inventory" class="tab-content hidden h-full flex flex-col">
+
+                    <!-- Top Action Bar -->
+                    <div class="flex items-center justify-between mb-8">
+                        <h2 class="text-2xl font-bold text-slate-800">Inventory Management</h2>
+                        <div class="flex gap-3">
+                            <button onclick="showSupplyForm()" id="addItemBtn"
+                                class="btn-action bg-emerald-600 text-white shadow-md hover:bg-emerald-700">
+                                <i class="fas fa-boxes mr-2"></i><span>Add New Item</span>
+                            </button>
+                            <button onclick="showResupplyForm()" id="resupplyBtn"
+                                class="btn-action bg-white text-slate-700 border border-slate-200 shadow-sm hover:shadow-md">
+                                <i class="fas fa-truck-loading mr-2 text-indigo-500"></i><span>Resupply Item</span>
+                            </button>
+                            <button onclick="generateItemReport()" id="itemReportBtn"
+                                class="btn-action bg-white text-slate-700 border border-slate-200 shadow-sm hover:shadow-md">
+                                <i class="fas fa-chart-pie mr-2 text-blue-500"></i><span>Item Report</span>
+                            </button>
+                            <button onclick="showStoreReportModal()" id="inventoryStoreReportBtn"
+                                class="btn-action bg-white text-slate-700 border border-slate-200 shadow-sm hover:shadow-md">
+                                <i class="fas fa-file-alt mr-2 text-purple-500"></i><span>Store Report</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filter Bar -->
+                    <div class="glass-card mb-6 p-4 flex flex-wrap gap-4 items-center justify-between">
+                        <div
+                            class="flex-1 min-w-[300px] flex items-center bg-white/60 border border-slate-200 rounded-xl px-4 py-2.5 shrink-0 focus-within:border-primary-color transition-colors">
+                            <i class="fas fa-search text-slate-400 mr-3"></i>
+                            <input type="text" id="inventorySearch"
+                                placeholder="Search inventory by name or specification..."
+                                class="bg-transparent border-none outline-none w-full text-sm text-slate-700 min-w-0"
+                                oninput="filterInventory()">
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0 flex-wrap">
+                            <select id="inventoryStockFilter"
+                                class="w-48 bg-white/60 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none shrink-0 focus:border-primary-color transition-colors"
+                                onchange="filterInventory()">
+                                <option value="">All Stock Levels</option>
+                                <option value="low">Low Stock (&lt; 10)</option>
+                                <option value="out">Out of Stock</option>
+                                <option value="normal">Normal Stock</option>
+                            </select>
+                            <div class="flex gap-2 shrink-0">
+                                <button onclick="filterInventory()"
+                                    class="px-6 py-2.5 skeuo-btn btn-primary-v8 rounded-xl text-xs font-bold shadow-sm whitespace-nowrap">
+                                    <i class="fas fa-filter mr-2"></i>Apply
+                                </button>
+                                <button onclick="clearInventoryFilters()"
+                                    class="px-6 py-2.5 skeuo-btn btn-outline-v8 rounded-xl text-xs font-bold text-slate-500 whitespace-nowrap">
+                                    <i class="fas fa-undo mr-2"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Table Card -->
+                    <div class="glass-card flex-grow flex flex-col min-h-[400px]">
+                        <div class="p-6 border-b border-slate-100/50 flex justify-between items-center">
+                            <h3 class="font-bold text-lg text-slate-800">Current Stock</h3>
+                            <div class="flex items-center gap-3">
+                                <button id="batchDeleteBtn" onclick="deleteSelectedInventoryItems()"
+                                    class="px-4 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs font-bold hidden hover:bg-red-100">
+                                    <i class="fas fa-trash mr-1"></i> Delete Selected
+                                </button>
+                                <div
+                                    class="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">
+                                    <button id="prevInventoryPage" onclick="changeInventoryPage(-1)"
+                                        class="hover:text-slate-800 disabled:opacity-30"><i
+                                            class="fas fa-chevron-left"></i></button>
+                                    <span id="inventoryPageInfo" class="font-medium min-w-[80px] text-center">Page 1 of
+                                        1</span>
+                                    <button id="nextInventoryPage" onclick="changeInventoryPage(1)"
+                                        class="hover:text-slate-800 disabled:opacity-30"><i
+                                            class="fas fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto flex-grow">
+                            <table id="inventoryTable" class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr
+                                        class="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
+                                        <th class="px-6 py-4 font-bold w-12"><input type="checkbox"
+                                                id="selectAllInventory"
+                                                class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"></th>
+                                        <th class="px-6 py-4 font-bold">ID</th>
+                                        <th class="px-6 py-4 font-bold">Item Name</th>
+                                        <th class="px-6 py-4 font-bold">Specification</th>
+                                        <th class="px-6 py-4 font-bold">Quantity</th>
+                                        <th class="px-6 py-4 font-bold">Last Resupply</th>
+                                        <th class="px-6 py-4 font-bold">Latest Tender ID</th>
+                                        <th class="px-6 py-4 font-bold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryList" class="divide-y divide-slate-100/50 bg-white/40">
+                                    <!-- Inventory items populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Employees Tab -->
+                <div id="employees" class="tab-content hidden h-full flex flex-col">
+
+                    <!-- Top Action Bar -->
+                    <div class="flex items-center justify-between mb-8">
+                        <h2 class="text-2xl font-bold text-slate-800">Employee Management</h2>
+                        <div class="flex gap-3">
+                            <button onclick="showAddEmployeeForm()" id="addEmployeeBtn"
+                                class="btn-action bg-emerald-600 text-white shadow-md hover:bg-emerald-700">
+                                <i class="fas fa-user-plus mr-2"></i><span>Add New Employee</span>
+                            </button>
+                            <button onclick="showCSVImportModal()" id="csvImportBtn"
+                                class="btn-action bg-white text-slate-700 border border-slate-200 shadow-sm hover:shadow-md">
+                                <i class="fas fa-file-import mr-2 text-indigo-500"></i><span>Import from CSV</span>
+                            </button>
+                            <button onclick="generateEmployeeReport()" id="employeeReportBtn"
+                                class="btn-action bg-white text-slate-700 border border-slate-200 shadow-sm hover:shadow-md">
+                                <i class="fas fa-chart-bar mr-2 text-blue-500"></i><span>Employee Report</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filter Bar -->
+                    <div class="glass-card mb-6 p-4 flex flex-wrap gap-4 items-center justify-between">
+                        <div
+                            class="flex-1 min-w-[200px] flex items-center bg-white/60 border border-slate-200 rounded-lg px-4 py-2 shrink-0">
+                            <i class="fas fa-search text-slate-400 mr-3"></i>
+                            <input type="text" id="employeeSearch" placeholder="Search employee by name..."
+                                class="bg-transparent border-none outline-none w-full text-sm text-slate-700 min-w-0">
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0 flex-wrap">
+                            <select id="employeeDesignationFilter"
+                                class="w-48 bg-white/60 border border-slate-200 rounded-lg px-4 py-2 text-sm text-slate-700 outline-none shrink-0">
+                                <option value="">All Designations</option>
+                                <option value="Chief Architect">Chief Architect</option>
+                                <option value="Additional Chief Architect">Additional Chief Architect</option>
+                                <option value="Superintending Architect">Superintending Architect</option>
+                                <option value="Executive Architect">Executive Architect</option>
+                                <option value="Senior Assistant Architect">Senior Assistant Architect</option>
+                                <option value="Assistant Architect">Assistant Architect</option>
+                                <option value="Superintending Engineer">Superintending Engineer</option>
+                                <option value="Executive Engineer">Executive Engineer</option>
+                                <option value="Sub Divisional Engineer">Sub Divisional Engineer</option>
+                                <option value="Assistant Engineer">Assistant Engineer</option>
+                                <option value="Sub Assistant Engineer">Sub Assistant Engineer</option>
+                                <option value="Admin. Officer">Admin. Officer</option>
+                                <option value="Sub-Assistant Architect">Sub-Assistant Architect</option>
+                                <option value="Staff-Technical">Staff-Technical</option>
+                                <option value="Staff-Non-technical">Staff-Non-technical</option>
+                                <option value="Driver">Driver</option>
+                            </select>
+                            <div class="flex gap-2 shrink-0">
+                                <button onclick="filterEmployees()"
+                                    class="px-5 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold shadow-sm hover:bg-slate-700 whitespace-nowrap">
+                                    Apply
+                                </button>
+                                <button onclick="clearEmployeeFilters()"
+                                    class="px-5 py-2 bg-white text-slate-500 border border-slate-200 rounded-lg text-sm font-bold hover:bg-slate-50 whitespace-nowrap">
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Employee Table Card -->
+                    <div class="glass-card flex-grow flex flex-col min-h-[400px]">
+                        <div class="p-6 border-b border-slate-100/50 flex justify-between items-center">
+                            <h3 class="font-bold text-lg text-slate-800">Current Employees</h3>
+                            <div
+                                class="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">
+                                <button id="prevEmployeePage" onclick="changeEmployeePage(-1)"
+                                    class="hover:text-slate-800 disabled:opacity-30"><i
+                                        class="fas fa-chevron-left"></i></button>
+                                <span id="employeePageInfo" class="font-medium min-w-[80px] text-center">Page 1 of
+                                    1</span>
+                                <button id="nextEmployeePage" onclick="changeEmployeePage(1)"
+                                    class="hover:text-slate-800 disabled:opacity-30"><i
+                                        class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto flex-grow">
+                            <table id="employeeTable" class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr
+                                        class="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
+                                        <th class="px-6 py-4 font-bold">ID</th>
+                                        <th class="px-6 py-4 font-bold">Name</th>
+                                        <th class="px-6 py-4 font-bold">Designation</th>
+                                        <th class="px-6 py-4 font-bold">Last Transaction</th>
+                                        <th class="px-6 py-4 font-bold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employeeList" class="divide-y divide-slate-100/50 bg-white/40">
+                                    <!-- Employee list populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Disbursements & Returns Tab -->
+                <div id="disbursements" class="tab-content hidden h-full flex flex-col">
+
+                    <!-- Top Action Bar -->
+                    <div class="flex items-center justify-between mb-8">
+                        <h2 class="text-2xl font-bold text-slate-800">Disbursements & Returns</h2>
+                        <div class="flex gap-3">
+                            <button onclick="showDisbursementForm()" id="newDisbursementBtn"
+                                class="btn-action bg-blue-600 text-white shadow-md hover:bg-blue-700">
+                                <i class="fas fa-plus mr-2"></i><span>New Disbursement</span>
+                            </button>
+                            <button onclick="showReturnForm()" id="recordReturnBtn"
+                                class="btn-action bg-amber-500 text-white shadow-md hover:bg-amber-600">
+                                <i class="fas fa-undo mr-2"></i><span>Record Return</span>
+                            </button>
+                            <button onclick="showBatchDisbursementForm()" id="batchDisbursementBtn"
+                                class="btn-action bg-white text-slate-700 border border-slate-200 shadow-sm hover:shadow-md">
+                                <i class="fas fa-users mr-2 text-purple-500"></i><span>Batch Disbursement</span>
+                            </button>
+                            <button onclick="showDisbursementReportModal()" id="disbursementStoreReportBtn"
+                                class="btn-action bg-white text-slate-700 border border-slate-200 shadow-sm hover:shadow-md">
+                                <i class="fas fa-file-alt mr-2 text-emerald-600"></i><span>Store Report</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filter Bar -->
+                    <div class="glass-card mb-6 p-4 flex flex-wrap gap-4 items-center justify-between">
+                        <div
+                            class="flex-1 min-w-[150px] flex items-center bg-white/60 border border-slate-200 rounded-lg px-3 py-2 shrink-0">
+                            <i class="fas fa-search text-slate-400 mr-2 text-sm"></i>
+                            <input type="text" id="disbursementSearch" placeholder="Search..."
+                                class="bg-transparent border-none outline-none w-full text-xs text-slate-700 min-w-0">
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0 flex-wrap">
+                            <div class="flex items-center gap-2 shrink-0">
+                                <input type="date" id="disbursementDateFrom"
+                                    class="w-32 bg-white/60 border border-slate-200 rounded-lg px-2 py-2 text-xs text-slate-500 outline-none">
+                                <span class="text-slate-400 text-xs text-center shrink-0">to</span>
+                                <input type="date" id="disbursementDateTo"
+                                    class="w-32 bg-white/60 border border-slate-200 rounded-lg px-2 py-2 text-xs text-slate-500 outline-none">
+                            </div>
+                            <select id="disbursementTypeFilter"
+                                class="w-32 bg-white/60 border border-slate-200 rounded-lg px-2 py-2 text-xs text-slate-700 outline-none shrink-0">
+                                <option value="">All Types</option>
+                                <option value="disbursement">Disbursements</option>
+                                <option value="return">Returns</option>
+                            </select>
+                            <div class="flex gap-2 shrink-0">
+                                <button onclick="filterDisbursements()"
+                                    class="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-slate-700 whitespace-nowrap">
+                                    Apply
+                                </button>
+                                <button onclick="clearDisbursementFilters()"
+                                    class="px-4 py-2 bg-white text-slate-500 border border-slate-200 rounded-lg text-xs font-bold hover:bg-slate-50 whitespace-nowrap">
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Transactions Table Card -->
+                    <div class="glass-card flex-grow flex flex-col min-h-[400px]">
+                        <div class="p-6 border-b border-slate-100/50 flex justify-between items-center">
+                            <h3 class="font-bold text-lg text-slate-800">Transaction History</h3>
+                            <div class="flex items-center gap-4 text-slate-400">
+                                <button id="prevDisbursementPage" onclick="changeDisbursementPage(-1)"
+                                    class="hover:text-slate-800 disabled:opacity-30"><i
+                                        class="fas fa-chevron-left"></i></button>
+                                <span id="disbursementPageInfo" class="font-medium min-w-[80px] text-center">Page 1 of
+                                    1</span>
+                                <button id="nextDisbursementPage" onclick="changeDisbursementPage(1)"
+                                    class="hover:text-slate-800 disabled:opacity-30"><i
+                                        class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto flex-grow">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr
+                                        class="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
+                                        <th class="px-6 py-4 font-bold">Trans. ID</th>
+                                        <th class="px-6 py-4 font-bold">Date</th>
+                                        <th class="px-6 py-4 font-bold">Recipient</th>
+                                        <th class="px-6 py-4 font-bold">Type</th>
+                                        <th class="px-6 py-4 font-bold">Total Items</th>
+                                        <th class="px-6 py-4 font-bold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="disbursementList" class="divide-y divide-slate-100/50 bg-white/40">
+                                    <!-- Transaction list populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Saved Reports Tab -->
+                <div id="saved-reports" class="tab-content hidden h-full flex flex-col">
+
+                    <!-- Top Action Bar -->
+                    <div class="flex items-center justify-between mb-8">
+                        <h2 class="text-2xl font-bold text-slate-800">Saved Reports</h2>
+                    </div>
+
+                    <!-- Search and Filter Bar -->
+                    <div class="glass-card mb-6 p-4 flex flex-wrap gap-4 items-center justify-between">
+                        <div
+                            class="flex-1 min-w-[150px] flex items-center bg-white/60 border border-slate-200 rounded-lg px-3 py-2 shrink-0">
+                            <i class="fas fa-search text-slate-400 mr-2 text-sm"></i>
+                            <input type="text" id="reportSearch" placeholder="Search title..."
+                                class="bg-transparent border-none outline-none w-full text-xs text-slate-700 min-w-0">
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0 flex-wrap">
+                            <div class="flex items-center gap-2 shrink-0">
+                                <input type="date" id="reportFilterFrom"
+                                    class="w-32 bg-white/60 border border-slate-200 rounded-lg px-2 py-2 text-xs text-slate-500 outline-none">
+                                <span class="text-slate-400 text-xs text-center shrink-0">to</span>
+                                <input type="date" id="reportFilterTo"
+                                    class="w-32 bg-white/60 border border-slate-200 rounded-lg px-2 py-2 text-xs text-slate-500 outline-none">
+                            </div>
+                            <select id="reportTypeFilter"
+                                class="w-32 bg-white/60 border border-slate-200 rounded-lg px-2 py-2 text-xs text-slate-700 outline-none shrink-0">
+                                <option value="">All Reports</option>
+                                <option value="item">Item</option>
+                                <option value="employee">Employee</option>
+                            </select>
+                            <div class="flex gap-2 shrink-0">
+                                <button onclick="filterReports()"
+                                    class="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-slate-700 whitespace-nowrap">
+                                    Apply
+                                </button>
+                                <button onclick="clearReportFilters()"
+                                    class="px-4 py-2 bg-white text-slate-500 border border-slate-200 rounded-lg text-xs font-bold hover:bg-slate-50 whitespace-nowrap">
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Reports Table Card -->
+                    <div class="glass-card flex-grow flex flex-col min-h-[400px]">
+                        <div class="p-6 border-b border-slate-100/50 flex justify-between items-center">
+                            <h3 class="font-bold text-lg text-slate-800">Available Reports</h3>
+                        </div>
+
+                        <div class="overflow-x-auto flex-grow">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr
+                                        class="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
+                                        <th class="px-6 py-4 font-bold">Title</th>
+                                        <th class="px-6 py-4 font-bold">Type</th>
+                                        <th class="px-6 py-4 font-bold">Generated At</th>
+                                        <th class="px-6 py-4 font-bold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="savedReportsList" class="divide-y divide-slate-100/50 bg-white/40">
+                                    <!-- Saved reports populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data & Storage Tab -->
+                <div id="data-storage" class="tab-content hidden h-full flex flex-col">
+
+                    <!-- Top Action Bar -->
+                    <div class="flex items-center justify-between mb-8">
+                        <h2 class="text-2xl font-bold text-slate-800">Data & Storage Management</h2>
+                        <div
+                            class="flex gap-3 text-sm font-bold flex items-center bg-white/60 border border-slate-200 rounded-lg px-4 py-2 shadow-sm text-slate-700">
+                            <span
+                                class="status-indicator status-online shadow-[0_0_8px_rgba(22,163,74,0.6)] mr-2"></span>
+                            <span>System: Firestore (Primary)</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-grow">
+                        <!-- Left Column -->
+                        <div class="flex flex-col gap-6">
+
+                            <!-- Storage Info Card -->
+                            <div class="glass-card flex-shrink-0">
+                                <div class="p-5 border-b border-slate-100/50">
+                                    <h3 class="font-bold text-lg text-slate-800"><i
+                                            class="fas fa-info-circle mr-2 text-blue-500"></i> Storage Information</h3>
+                                </div>
+                                <div class="p-5">
+                                    <p class="text-sm text-slate-600 mb-6 border-b border-slate-50 pb-4">
+                                        All live data is stored in **Supabase**. Use the manual backup below to archive a snapshot locally.
+                                    </p>
+
+                                    <div class="space-y-4">
+                                        <div class="flex justify-between items-center text-sm">
+                                            <span class="text-slate-500">Backup Mode:</span>
+                                            <span
+                                                class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-xs font-bold border border-emerald-100">Supabase
+                                                + Local JSON</span>
+                                        </div>
+                                        <div class="flex justify-between items-center text-sm">
+                                            <span class="text-slate-500">Current Store ID:</span>
+                                            <code id="currentStoreDocId"
+                                                class="font-mono font-bold text-indigo-600 text-[11px]"></code>
+                                        </div>
+                                        <div class="flex justify-between items-center text-sm">
+                                            <span class="text-slate-500">Last Backup:</span>
+                                            <span id="lastGasSyncDisplay"
+                                                class="font-bold text-slate-700">Checking...</span>
+                                        </div>
+                                    </div>
+
+                                    <button onclick="exportStoreBackup()"
+                                        class="w-full mt-6 py-3 px-4 bg-slate-800 text-white rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-700 transition-all shadow-md skeuo-btn">
+                                        <i class="fas fa-file-download"></i> Download Local JSON Backup
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Backup & Restore Card -->
+                            <div class="glass-card flex-shrink-0">
+                                <div class="p-5 border-b border-slate-100/50 flex justify-between items-center">
+                                    <h3 class="font-bold text-lg text-slate-800"><i
+                                            class="fas fa-history mr-2 text-indigo-500"></i> Backup & Restore</h3>
+                                    <div class="flex gap-2">
+                                        <button id="importJsonBtn" onclick="triggerImportJSON()"
+                                            class="px-3 py-1.5 bg-indigo-500 text-white rounded text-sm font-medium shadow-sm hover:bg-indigo-600 transition-colors">
+                                            <i class="fas fa-file-import mr-1"></i> Import JSON
+                                        </button>
+                                        <button id="exportJsonBtn" onclick="triggerExportJSON()"
+                                            class="px-3 py-1.5 bg-emerald-500 text-white rounded text-sm font-medium shadow-sm hover:bg-emerald-600 transition-colors">
+                                            <i class="fas fa-file-export mr-1"></i> Export JSON
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="p-0 overflow-hidden rounded-b-xl">
+                                    <div class="overflow-x-auto">
+                                        <table class="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr
+                                                    class="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
+                                                    <th class="px-5 py-3 font-bold">Date</th>
+                                                    <th class="px-5 py-3 font-bold">Timestamp</th>
+                                                    <th class="px-5 py-3 font-bold text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="backupList" class="divide-y divide-slate-100/50 bg-white/40">
+                                                <!-- Backup list populated here -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Maintenance Card -->
+                            <div class="glass-card flex-shrink-0 border border-red-100 shadow-[0_4px_20px_rgba(239,68,68,0.05)]"
+                                id="maintenanceSection">
+                                <div class="p-5 border-b border-red-50/50 bg-red-50/20">
+                                    <h3 class="font-bold text-lg text-red-600"><i class="fas fa-tools mr-2"></i> System
+                                        Maintenance</h3>
+                                </div>
+                                <div class="p-5">
+                                    <div
+                                        class="flex items-start bg-red-50 text-red-700 p-3 rounded-lg text-sm mb-4 border border-red-100">
+                                        <i class="fas fa-exclamation-triangle mt-1 mr-3 flex-shrink-0"></i>
+                                        <p><strong>Warning:</strong> These actions are irreversible and require Admin
+                                            privileges. Pruning old data permanently deletes historical records before
+                                            the selected date.</p>
+                                    </div>
+                                    <button onclick="showPruneDataModal()"
+                                        class="w-full py-2.5 bg-red-500 text-white rounded-lg font-bold shadow-sm hover:bg-red-600 transition-colors">
+                                        <i class="fas fa-cut mr-2"></i> Prune Historical Data
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Right Column: Event Log -->
+                        <div class="glass-card flex flex-col h-full">
+                            <div class="p-5 border-b border-slate-100/50">
+                                <h3 class="font-bold text-lg text-slate-800"><i
+                                        class="fas fa-list-alt mr-2 text-emerald-500"></i> Event Log</h3>
+                            </div>
+                            <div class="p-0 flex-grow overflow-hidden rounded-b-xl relative">
+                                <div class="absolute inset-0 overflow-y-auto">
+                                    <table class="w-full text-left border-collapse p-4">
+                                        <thead>
+                                            <tr
+                                                class="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 sticky top-0 z-10">
+                                                <th class="px-5 py-3 font-bold whitespace-nowrap">Timestamp</th>
+                                                <th class="px-5 py-3 font-bold">User</th>
+                                                <th class="px-5 py-3 font-bold">Event Type</th>
+                                                <th class="px-5 py-3 font-bold w-full">Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="eventLogList"
+                                            class="divide-y divide-slate-100/50 bg-white/40 text-sm">
+                                            <!-- Event log entries populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Store Management Tab -->
+                <div id="store-management" class="tab-content hidden h-full flex flex-col">
+
+                    <!-- Top Action Bar -->
+                    <div class="flex items-center justify-between mb-8">
+                        <h2 class="text-2xl font-bold text-slate-800">Store Configuration</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+
+                        <!-- Add Store Form Card -->
+                        <div class="glass-card lg:col-span-1 flex-shrink-0 self-start">
+                            <div class="p-5 border-b border-slate-100/50">
+                                <h3 class="font-bold text-lg text-slate-800"><i
+                                        class="fas fa-plus-circle mr-2 text-indigo-500"></i> Register New Store</h3>
+                            </div>
+                            <div class="p-5">
+                                <form id="addStoreForm" class="space-y-5">
+                                    <div>
+                                        <label for="newStoreId"
+                                            class="block text-sm font-bold text-slate-700 mb-2">Store ID
+                                            (Unique)</label>
+                                        <input type="text" id="newStoreId" placeholder="e.g., store-hq-01" required
+                                            class="w-full bg-white/60 border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all">
+                                    </div>
+                                    <div>
+                                        <label for="newStoreName"
+                                            class="block text-sm font-bold text-slate-700 mb-2">Store Name</label>
+                                        <input type="text" id="newStoreName" placeholder="Main Headquarters Store"
+                                            required
+                                            class="w-full bg-white/60 border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all">
+                                    </div>
+                                    <div>
+                                        <label for="newStoreLocation"
+                                            class="block text-sm font-bold text-slate-700 mb-2">Location/Address</label>
+                                        <input type="text" id="newStoreLocation" placeholder="Building A, Floor 1"
+                                            class="w-full bg-white/60 border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all">
+                                    </div>
+
+                                    <button type="submit"
+                                        class="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 mt-2 transition-colors">
+                                        <i class="fas fa-store mr-2"></i> Create Store Profile
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Existing Stores Table Card -->
+                        <div class="glass-card lg:col-span-2 flex flex-col h-full min-h-[400px]">
+                            <div class="p-5 border-b border-slate-100/50 flex justify-between items-center">
+                                <h3 class="font-bold text-lg text-slate-800"><i
+                                        class="fas fa-network-wired mr-2 text-emerald-500"></i> Active Stores</h3>
+                            </div>
+
+
+                            <div class="p-0 flex-grow overflow-hidden rounded-b-xl relative">
+                                <div class="absolute inset-0 overflow-y-auto">
+                                    <table class="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr
+                                                class="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 sticky top-0 z-10">
+                                                <th class="px-6 py-4 font-bold">Store ID</th>
+                                                <th class="px-6 py-4 font-bold">Name</th>
+                                                <th class="px-6 py-4 font-bold">Location</th>
+                                                <th class="px-6 py-4 font-bold text-right">Settings</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="storeList" class="divide-y divide-slate-100/50 bg-white/40">
+                                            <!-- Store list populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                </section>
+            </main>
+
+            <!-- Footer -->
+            <footer class="footer no-print">
+                DOA Store Manager | Hybrid Storage Back-up Version 2.5 | Designed by <a
+                    href="https://facebook.com/smani.bubt" target="_blank" class="text-blue-500 hover:underline">S M
+                    Anisul Haque</a>
+            </footer>
+        </div>
+
+        <!-- Modals (All hidden by default) -->
+
+        <!-- Generic Confirmation Modal -->
+        <div id="confirmationModal" class="hidden fixed inset-0 flex items-center justify-center z-[60] modal-backdrop">
+            <div class="glass-modal max-w-sm animate-scale-in">
+                <h3 id="confirmationTitle" class="text-2xl font-bold mb-4 text-slate-800">Confirm Action</h3>
+                <p id="confirmationMessage" class="mb-8 text-slate-600 text-sm leading-relaxed">Are you sure you want to
+                    proceed with this action? It cannot be undone.</p>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="hideModal('confirmationModal')"
+                        class="compact-button btn-outline-v8 skeuo-btn">Cancel</button>
+                    <button type="button" id="confirmActionButton"
+                        class="compact-button btn-primary-v8 skeuo-btn bg-red-600 hover:bg-red-700">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generic Message Modal -->
+        <div id="messageModal" class="hidden fixed inset-0 flex items-center justify-center z-[60] modal-backdrop">
+            <div class="glass-modal max-w-sm animate-scale-in">
+                <h3 id="messageTitle" class="text-2xl font-bold mb-4 text-slate-800">Notification</h3>
+                <p id="messageContent" class="mb-8 text-slate-600 text-sm leading-relaxed">Action successful.</p>
+                <div class="flex justify-end">
+                    <button onclick="hideModal('messageModal')"
+                        class="compact-button btn-primary-v8 skeuo-btn">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disbursement/Return Confirmation Modal -->
+        <div id="disbursementConfirmationModal"
+            class="hidden fixed inset-0 flex items-center justify-center z-[60] modal-backdrop">
+            <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md mx-4">
+                <h3 id="confirmDisbursementTitle" class="text-lg font-bold mb-4 text-gray-800">Confirm Action</h3>
+                <div id="confirmDisbursementMessage" class="mb-6 text-gray-700 text-sm">
+                    <!-- Dynamic message will be inserted here -->
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button onclick="hideModal('disbursementConfirmationModal')"
+                        class="compact-button btn-outline">Cancel</button>
+                    <button id="confirmDisbursementButton" class="compact-button btn-primary">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disbursement Form Modal -->
+        <div id="disbursementModal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-modal animate-scale-in">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-2xl font-bold text-slate-800">Record Disbursement</h3>
+                    <button onclick="hideModal('disbursementModal')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="disbursementForm" class="space-y-6">
+                    <div>
+                        <label for="disbursementRecipient"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Recipient</label>
+                        <div class="searchable-select">
+                            <input type="text" placeholder="Search employees..."
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                            <div class="dropdown-arrow"><i class="fas fa-chevron-down"></i></div>
+                            <div class="dropdown-options"></div>
+                            <select id="disbursementRecipient" class="form-input hidden">
+                                <option value="">Select Employee</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="disbursementItemsContainer"
+                        class="space-y-4 border border-slate-200/50 p-6 rounded-2xl bg-white/30">
+                        <h4 class="font-bold text-sm text-slate-500 uppercase tracking-widest">Items Disbursed</h4>
+                        <!-- Item entry rows will be added here -->
+                    </div>
+
+                    <button type="button" onclick="addDisbursementItemRow()"
+                        class="compact-button btn-outline-v8 skeuo-btn w-full py-4 border-dashed border-2">
+                        <i class="fas fa-plus mr-2"></i> Add Item
+                    </button>
+
+                    <div class="flex justify-end space-x-4 pt-6">
+                        <button type="button" onclick="hideModal('disbursementModal')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-700 hover:-translate-y-0.5 transition-all skeuo-btn">
+                            Record Disbursement
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Return Form Modal -->
+        <div id="returnModal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-modal animate-scale-in">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-2xl font-bold text-slate-800">Record Return</h3>
+                    <button onclick="hideModal('returnModal')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="returnForm" class="space-y-6">
+                    <div>
+                        <label for="returnRecipient"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Returned
+                            By</label>
+                        <div class="searchable-select">
+                            <input type="text" placeholder="Search employees..."
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                            <div class="dropdown-arrow"><i class="fas fa-chevron-down"></i></div>
+                            <div class="dropdown-options"></div>
+                            <select id="returnRecipient" class="form-input hidden">
+                                <option value="">Select Employee</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="returnItemsContainer"
+                        class="space-y-4 border border-slate-200/50 p-6 rounded-2xl bg-white/30">
+                        <h4 class="font-bold text-sm text-slate-500 uppercase tracking-widest">Items Returned</h4>
+                        <!-- Item entry rows will be added here -->
+                    </div>
+
+                    <button type="button" onclick="addReturnItemRow()"
+                        class="compact-button btn-outline-v8 skeuo-btn w-full py-4 border-dashed border-2">
+                        <i class="fas fa-plus mr-2"></i> Add Item
+                    </button>
+
+                    <div class="flex justify-end space-x-4 pt-6">
+                        <button type="button" onclick="hideModal('returnModal')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-orange-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-orange-200 hover:bg-orange-700 hover:-translate-y-0.5 transition-all skeuo-btn">
+                            Record Return
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Batch Disbursement Modal -->
+        <div id="batchDisbursementModal"
+            class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-modal max-w-2xl animate-scale-in">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-2xl font-bold text-slate-800">Batch Disbursement</h3>
+                    <button onclick="hideModal('batchDisbursementModal')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="batchDisbursementForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="batchRecipientList"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Recipients</label>
+                            <select id="batchRecipientList" multiple size="5" required
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                                <!-- Employees populated here -->
+                            </select>
+                            <p class="text-xs text-slate-400 mt-2">Hold Ctrl/Cmd to select multiple.</p>
+                        </div>
+                        <div>
+                            <label for="batchDesignationFilter"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Filter by
+                                Group</label>
+                            <select id="batchDesignationFilter"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium"
+                                onchange="filterBatchRecipientsByDesignation()">
+                                <option value="">All Designations</option>
+                                <option value="Chief Architect">Chief Architect</option>
+                                <option value="Additional Chief Architect">Additional Chief Architect</option>
+                                <option value="Superintending Architect">Superintending Architect</option>
+                                <option value="Executive Architect">Executive Architect</option>
+                                <option value="Senior Assistant Architect">Senior Assistant Architect</option>
+                                <option value="Assistant Architect">Assistant Architect</option>
+                                <option value="Superintending Engineer">Superintending Engineer</option>
+                                <option value="Executive Engineer">Executive Engineer</option>
+                                <option value="Sub Divisional Engineer">Sub Divisional Engineer</option>
+                                <option value="Assistant Engineer">Assistant Engineer</option>
+                                <option value="Sub Assistant Engineer">Sub Assistant Engineer</option>
+                                <option value="Admin. Officer">Admin. Officer</option>
+                                <option value="Sub-Assistant Architect">Sub-Assistant Architect</option>
+                                <option value="Staff-Technical">Staff-Technical</option>
+                                <option value="Staff-Non-technical">Staff-Non-technical</option>
+                                <option value="Driver">Driver</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="batchDisbursementItemsContainer"
+                        class="space-y-4 border border-slate-200/50 p-6 rounded-2xl bg-white/30">
+                        <h4 class="font-bold text-sm text-slate-500 uppercase tracking-widest">Items per Recipient</h4>
+                    </div>
+
+                    <button type="button" onclick="addBatchDisbursementItemRow()"
+                        class="compact-button btn-outline-v8 skeuo-btn w-full py-4 border-dashed border-2">
+                        <i class="fas fa-plus mr-2"></i> Add Item Type
+                    </button>
+
+                    <div class="flex justify-end space-x-4 pt-6">
+                        <button type="button" onclick="hideModal('batchDisbursementModal')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all skeuo-btn">
+                            Record Batch
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Item Details Modal (For viewing/editing) -->
+        <div id="itemDetailsModal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-modal animate-scale-in">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-2xl font-bold text-slate-800">Item Details</h3>
+                    <button onclick="hideModal('itemDetailsModal')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="editItemForm" class="space-y-6">
+                    <input type="hidden" id="editItemId">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Item
+                            ID</label>
+                        <p id="detailItemId"
+                            class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-500 font-mono text-sm">
+                        </p>
+                    </div>
+                    <div>
+                        <label for="editItemName"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Item
+                            Name</label>
+                        <input type="text" id="editItemName" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                    </div>
+                    <div>
+                        <label for="editItemSpec"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Specification</label>
+                        <input type="text" id="editItemSpec"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                    </div>
+                    <div>
+                        <label for="editItemQuantity"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Quantity (Read
+                            Only)</label>
+                        <input type="number" id="editItemQuantity" disabled
+                            class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-400 font-medium">
+                    </div>
+                    <div class="flex justify-between items-center pt-6">
+                        <button type="button" onclick="deleteItemConfirmation()"
+                            class="px-4 py-2 text-red-600 hover:text-red-700 font-bold transition-colors">
+                            <i class="fas fa-trash mr-2"></i> Delete
+                        </button>
+                        <div class="flex space-x-4">
+                            <button type="button" onclick="hideModal('itemDetailsModal')"
+                                class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                            <button type="submit"
+                                class="px-8 py-3 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-700 hover:-translate-y-0.5 transition-all skeuo-btn">
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Employee Details Modal (For viewing/editing) -->
+        <div id="employeeDetailsModal"
+            class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-modal animate-scale-in">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-2xl font-bold text-slate-800">Employee Details</h3>
+                    <button onclick="hideModal('employeeDetailsModal')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="editEmployeeForm" class="space-y-6">
+                    <input type="hidden" id="editEmployeeId">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Employee
+                            ID</label>
+                        <p id="detailEmployeeId"
+                            class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-500 font-mono text-sm">
+                        </p>
+                    </div>
+                    <div>
+                        <label for="editEmployeeName"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Full
+                            Name</label>
+                        <input type="text" id="editEmployeeName" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                    </div>
+                    <div>
+                        <label for="editEmployeeDesignation"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Designation</label>
+                        <select id="editEmployeeDesignation" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                            <option value="">Select Designation</option>
+                            <option value="Chief Architect">Chief Architect</option>
+                            <option value="Additional Chief Architect">Additional Chief Architect</option>
+                            <option value="Superintending Architect">Superintending Architect</option>
+                            <option value="Executive Architect">Executive Architect</option>
+                            <option value="Senior Assistant Architect">Senior Assistant Architect</option>
+                            <option value="Assistant Architect">Assistant Architect</option>
+                            <option value="Superintending Engineer">Superintending Engineer</option>
+                            <option value="Executive Engineer">Executive Engineer</option>
+                            <option value="Sub Divisional Engineer">Sub Divisional Engineer</option>
+                            <option value="Assistant Engineer">Assistant Engineer</option>
+                            <option value="Sub Assistant Engineer">Sub Assistant Engineer</option>
+                            <option value="Admin. Officer">Admin. Officer</option>
+                            <option value="Sub-Assistant Architect">Sub-Assistant Architect</option>
+                            <option value="Staff-Technical">Staff-Technical</option>
+                            <option value="Staff-Non-technical">Staff-Non-technical</option>
+                            <option value="Driver">Driver</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-between items-center pt-6">
+                        <button type="button" onclick="deleteEmployeeConfirmation()"
+                            class="px-4 py-2 text-red-600 hover:text-red-700 font-bold transition-colors">
+                            <i class="fas fa-trash mr-2"></i> Delete
+                        </button>
+                        <div class="flex space-x-4">
+                            <button type="button" onclick="hideModal('employeeDetailsModal')"
+                                class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                            <button type="submit"
+                                class="px-8 py-3 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-700 hover:-translate-y-0.5 transition-all skeuo-btn">
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- View Report Modal -->
+        <div id="viewReportModal"
+            class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop overflow-y-auto">
+            <div class="glass-modal report-modal my-8 animate-scale-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 id="viewReportTitle" class="text-2xl font-bold text-slate-800">Report Preview</h3>
+                    <button onclick="hideModal('viewReportModal')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div id="viewReportContent"
+                    class="print-preview-content overflow-y-auto border border-slate-200/50 p-6 rounded-2xl bg-white/30 max-h-[60vh]">
+                    <!-- Report content loaded here -->
+                </div>
+                <div class="flex justify-end space-x-4 pt-8">
+                    <button onclick="printReportContent('viewReportContent')"
+                        class="compact-button btn-outline-v8 skeuo-btn px-6 py-3">
+                        <i class="fas fa-print mr-2"></i> Print Report
+                    </button>
+                    <button onclick="hideModal('viewReportModal')"
+                        class="px-8 py-3 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-700 hover:-translate-y-0.5 transition-all skeuo-btn">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prune Data Modal -->
+        <div id="pruneDataModal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-modal max-w-md animate-scale-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-red-600"><i class="fas fa-cut mr-2"></i> Prune Data</h3>
+                    <button onclick="hideModal('pruneDataModal')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <p class="mb-6 text-slate-600 text-sm leading-relaxed">Select a cutoff date. All logs before this date
+                    will be **permanently deleted**.</p>
+                <form id="pruneDataForm" class="space-y-6">
+                    <div>
+                        <label for="pruneCutoffDate"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Cutoff
+                            Date</label>
+                        <input type="date" id="pruneCutoffDate" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                    </div>
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" onclick="hideModal('pruneDataModal')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-red-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-200 hover:bg-red-700 hover:-translate-y-0.5 transition-all skeuo-btn">
+                            Delete Permanently
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Admin Re-authentication Modal -->
+        <div id="adminReauthModal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-modal max-w-md animate-scale-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-red-600"><i class="fas fa-shield-alt mr-2"></i> Security Check
+                    </h3>
+                    <button onclick="hideModal('adminReauthModal')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <p class="mb-6 text-slate-600 text-sm leading-relaxed">Please re-enter your Admin credentials to
+                    confirm.</p>
+                <form id="adminReauthForm" class="space-y-6">
+                    <div>
+                        <label for="reauthUsername"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Admin
+                            ID</label>
+                        <input type="text" id="reauthUsername" required
+                            class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-400 font-medium"
+                            value="admin" readonly>
+                    </div>
+                    <div>
+                        <label for="reauthPassword"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Password</label>
+                        <input type="password" id="reauthPassword" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                    </div>
+                    <div id="reauthError"
+                        class="hidden p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs">
+                        <i class="fas fa-exclamation-circle mr-2"></i> Invalid Admin password.
+                    </div>
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" onclick="hideModal('adminReauthModal')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-red-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-200 hover:bg-red-700 hover:-translate-y-0.5 transition-all skeuo-btn">
+                            Confirm </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Disbursement Report Modal -->
+        <div id="disbursementReportModal"
+            class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-modal max-w-md animate-scale-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-slate-800"><i class="fas fa-file-invoice mr-2 text-blue-600"></i>
+                        Generate Report</h3>
+                    <button onclick="hideModal('disbursementReportModal')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="disbursementReportForm" class="space-y-6">
+                    <div>
+                        <label for="disbursementReportType"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Report
+                            Type</label>
+                        <select id="disbursementReportType" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                            <option value="disbursement">Disbursement Report</option>
+                            <option value="return">Return Report</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="disbursementReportFrom"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">From</label>
+                            <input type="date" id="disbursementReportFrom" required
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                        </div>
+                        <div>
+                            <label for="disbursementReportTo"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">To</label>
+                            <input type="date" id="disbursementReportTo" required
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" onclick="hideModal('disbursementReportModal')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-700 hover:-translate-y-0.5 transition-all skeuo-btn">
+                            Generate
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Generate Report Modal -->
+        <div id="generateReportModal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-modal max-w-md animate-scale-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 id="generateReportTitle" class="text-2xl font-bold text-slate-800">Custom Report</h3>
+                    <button onclick="hideModal('generateReportModal')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="generateReportForm" class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="reportFromDate"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">From</label>
+                            <input type="date" id="reportFromDate"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                        </div>
+                        <div>
+                            <label for="reportToDate"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">To</label>
+                            <input type="date" id="reportToDate"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                        </div>
+                    </div>
+                    <div id="reportItemSelectContainer" class="hidden">
+                        <label for="reportItemSelect"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Select
+                            Item</label>
+                        <div class="searchable-select">
+                            <input type="text" placeholder="Search items..."
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                            <div class="dropdown-arrow"><i class="fas fa-chevron-down"></i></div>
+                            <div class="dropdown-options"></div>
+                            <select id="reportItemSelect" class="form-input hidden">
+                                <option value="">Select Item</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="reportEmployeeSelectContainer" class="hidden">
+                        <label for="reportEmployeeSelect"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Select
+                            Employee</label>
+                        <div class="searchable-select">
+                            <input type="text" placeholder="Search employees..."
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                            <div class="dropdown-arrow"><i class="fas fa-chevron-down"></i></div>
+                            <div class="dropdown-options"></div>
+                            <select id="reportEmployeeSelect" class="form-input hidden">
+                                <option value="">All Employees</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" onclick="hideModal('generateReportModal')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-700 hover:-translate-y-0.5 transition-all skeuo-btn">
+                            Generate Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Store Report Modal -->
+        <div id="storeReportModal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-modal max-w-md animate-scale-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-slate-800">Store Activity Report</h3>
+                    <button onclick="hideModal('storeReportModal')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <p class="text-sm text-slate-500 mb-6">Generate a report of all items added or resupplied.</p>
+                <form id="storeReportForm" class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="storeReportFromDate"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Start
+                                Date</label>
+                            <input type="date" id="storeReportFromDate" required
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                        </div>
+                        <div>
+                            <label for="storeReportToDate"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">End
+                                Date</label>
+                            <input type="date" id="storeReportToDate" required
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" onclick="hideModal('storeReportModal')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-700 hover:-translate-y-0.5 transition-all skeuo-btn">
+                            Generate
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- CSV Import Modal -->
+        <div id="csvImportModal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-modal max-w-4xl animate-scale-in">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-2xl font-bold text-slate-800">Import Employees</h3>
+                    <button onclick="hideModal('csvImportModal')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="csvImportForm" class="space-y-6">
+                    <div>
+                        <label for="csvFileInput"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Select CSV
+                            File</label>
+                        <input type="file" id="csvFileInput" accept=".csv" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                        <p class="text-xs text-slate-400 mt-2">Format: Name, Designation</p>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" id="csvHasHeader"
+                            class="w-5 h-5 rounded border-slate-300 text-slate-800 focus:ring-slate-500" checked>
+                        <label for="csvHasHeader" class="text-sm font-medium text-slate-600">CSV file has header
+                            row</label>
+                    </div>
+
+                    <div id="csvPreview" class="hidden">
+                        <h4 class="font-bold text-sm text-slate-500 uppercase tracking-widest mb-4">Preview (First 5
+                            rows)</h4>
+                        <div class="csv-import-preview border border-slate-200 rounded-xl overflow-hidden">
+                            <table id="csvPreviewTable" class="w-full text-left text-xs">
+                                <!-- CSV preview will be populated here -->
+                            </table>
+                        </div>
+                        <div id="csvValidationErrors" class="mt-4 text-xs text-red-600 font-medium"></div>
+                    </div>
+
+                    <div class="flex justify-end space-x-4 pt-6">
+                        <button type="button" onclick="hideModal('csvImportModal')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-700 hover:-translate-y-0.5 transition-all skeuo-btn">
+                            Import Now
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add New Item Modal -->
+        <div id="addItemCard" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-card w-[480px] p-10 animate-scale-in">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-2xl font-bold text-slate-800">Add New Item</h3>
+                    <button onclick="hideModal('addItemCard')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="addItemForm" onsubmit="window.addItem(event)">
+                    <div class="space-y-6">
+                        <div>
+                            <label for="itemName"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Item
+                                Name</label>
+                            <input type="text" id="itemName" name="itemName" required placeholder="e.g. A4 Paper Rim"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                        </div>
+                        <div>
+                            <label for="itemSpec"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Specification</label>
+                            <input type="text" id="itemSpec" name="itemSpecification" placeholder="e.g. 80gsm, White"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                        </div>
+                        <div>
+                            <label for="itemQuantity"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Initial
+                                Quantity</label>
+                            <input type="number" id="itemQuantity" name="itemQuantity" required min="0" value="0"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-4 mt-10">
+                        <button type="button" onclick="hideModal('addItemCard')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-700 hover:-translate-y-0.5 transition-all">
+                            Add Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add New Employee Modal -->
+        <div id="addEmployeeCard" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-card w-[480px] p-10 animate-scale-in">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-2xl font-bold text-slate-800">Add New Employee</h3>
+                    <button onclick="hideModal('addEmployeeCard')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="addEmployeeForm" onsubmit="window.addEmployee(event)">
+                    <div class="space-y-6">
+                        <div>
+                            <label for="employeeName"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Full
+                                Name</label>
+                            <input type="text" id="employeeName" name="employeeName" required
+                                placeholder="Employee's Name"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                        </div>
+                        <div>
+                            <label for="employeeDesignation"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Designation</label>
+                            <select id="employeeDesignation" name="employeeDesignation" required
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                                <option value="">Select Designation</option>
+                                <option value="Chief Architect">Chief Architect</option>
+                                <option value="Additional Chief Architect">Additional Chief Architect</option>
+                                <option value="Superintending Architect">Superintending Architect</option>
+                                <option value="Executive Architect">Executive Architect</option>
+                                <option value="Senior Assistant Architect">Senior Assistant Architect</option>
+                                <option value="Assistant Architect">Assistant Architect</option>
+                                <option value="Superintending Engineer">Superintending Engineer</option>
+                                <option value="Executive Engineer">Executive Engineer</option>
+                                <option value="Sub Divisional Engineer">Sub Divisional Engineer</option>
+                                <option value="Assistant Engineer">Assistant Engineer</option>
+                                <option value="Sub Assistant Engineer">Sub Assistant Engineer</option>
+                                <option value="Admin. Officer">Admin. Officer</option>
+                                <option value="Staff-Technical">Staff-Technical</option>
+                                <option value="Staff-Non-technical">Staff-Non-technical</option>
+                                <option value="Driver">Driver</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-4 mt-10">
+                        <button type="button" onclick="hideModal('addEmployeeCard')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-700 hover:-translate-y-0.5 transition-all">
+                            Add Employee
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Resupply Modal -->
+        <div id="resupplyCard" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-card w-[480px] p-10 animate-scale-in">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-2xl font-bold text-slate-800">Record Resupply</h3>
+                    <button onclick="hideModal('resupplyCard')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="resupplyForm" onsubmit="window.resupplyItem(event)">
+                    <div class="space-y-6">
+                        <div>
+                            <label for="resupplyItemSelect"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Item to
+                                Resupply</label>
+                            <select id="resupplyItemSelect" name="resupplyItemSelect" required
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                                <option value="">Select Item</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="resupplyQuantity"
+                                class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Quantity
+                                Added</label>
+                            <input type="number" id="resupplyQuantity" name="resupplyQuantity" required min="1"
+                                placeholder="Enter amount..."
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-4 mt-10">
+                        <button type="button" onclick="hideModal('resupplyCard')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-700 hover:-translate-y-0.5 transition-all">
+                            Save Resupply
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main ES Module Entry Point -->
+        <script type="module" src="/src/main.js"></script>
+        <script>
+            document.querySelectorAll('.current-year').forEach(el => el.textContent = new Date().getFullYear());
+        </script>
+        <!-- Sync Splash Screen -->
+        <div id="syncSplash"
+            class="hidden fixed inset-0 flex items-center justify-center z-[100] transition-opacity duration-500"
+            style="background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(12px);">
+            <div
+                class="glass-card p-10 max-w-md w-full mx-4 flex flex-col items-center text-center shadow-2xl border border-white/20">
+                <div
+                    class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20 animate-pulse">
+                    <i class="fas fa-sync-alt text-2xl text-white"></i>
+                </div>
+                <h2 class="text-xl font-bold text-slate-900 mb-2">Synchronizing Data</h2>
+                <p id="syncStatus" class="text-sm text-slate-500 mb-8">Aligning your store
+                    records...</p>
+
+                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-2">
+                    <div id="syncProgressBar" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%">
+                    </div>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">DOA Hybrid
+                    Sync Engine v2.5</p>
+            </div>
+        </div>
+</body>
+
+</html>

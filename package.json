@@ -1,0 +1,21 @@
+{
+    "name": "doa-store-manager",
+    "private": true,
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build && powershell -Command \"Copy-Item -Path js, css, assets -Destination dist -Recurse -Force\"",
+        "preview": "vite preview"
+    },
+    "devDependencies": {
+        "autoprefixer": "10.4",
+        "postcss": "8.4",
+        "tailwindcss": "^3.4.1",
+        "vite": "^5.0.0"
+    },
+    "dependencies": {
+        "chart.js": "^4.0.0",
+        "@supabase/supabase-js": "^2.45.0"
+    }
+}

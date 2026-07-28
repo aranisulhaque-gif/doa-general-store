@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOA AI Lab | Architectural AI Systems</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #ffffff;
+      color: #1a2f2a;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    /* Header */
+    .header {
+      padding: 2rem 0 1rem;
+      border-bottom: 1px solid #dcebe5;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      color: #1a5d4c;
+    }
+    .logo-accent {
+      color: #c9512c;
+      font-weight: 700;
+    }
+    .logo-sub {
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: #6f8a7c;
+      margin-left: 0.5rem;
+    }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .nav-link {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #4a7064;
+      text-decoration: none;
+      padding: 0.45rem 1rem;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .nav-link:hover {
+      color: #1a5d4c;
+      border-color: #d9eee5;
+      background: #f5fbf8;
+    }
+
+    .nav-link-app {
+      color: #1a5d4c;
+      font-weight: 600;
+      border-color: #cbe6dd;
+      background: #f5fbf8;
+    }
+
+    .nav-link-app:hover {
+      background: #1a5d4c;
+      color: white;
+      border-color: #1a5d4c;
+    }
+
+    /* Hero */
+    .hero {
+      padding: 4rem 0 2rem;
+    }
+
+    .hero h1 {
+      font-size: 2.8rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      color: #1a3a32;
+      max-width: 800px;
+    }
+    .hero h1 .ai-highlight {
+      color: #c9512c;
+      font-weight: 700;
+      border-bottom: 2px solid #f0bc9a;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: #4a7064;
+      margin: 1.5rem 0 2rem;
+      max-width: 600px;
+    }
+
+    /* Buttons */
+    .btn-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.7rem 1.4rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #1a5d4c;
+      color: white;
+      border: none;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .btn-primary:hover {
+      background: #0f4a3c;
+      transform: translateY(-1px);
+    }
+
+    /* Section titles */
+    .section-title {
+      font-size: 1.6rem;
+      font-weight: 600;
+      margin: 3rem 0 1rem;
+      color: #1a4a3e;
+      border-left: 4px solid #1a5d4c;
+      padding-left: 1rem;
+    }
+
+    .section-sub {
+      color: #6b8a7e;
+      margin-bottom: 2rem;
+      font-size: 1rem;
+    }
+
+    /* Card grid */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.8rem;
+      margin: 2rem 0;
+    }
+
+    .card {
+      background: #fafefc;
+      border: 1px solid #e2f0ea;
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: all 0.25s ease;
+    }
+
+    .card:hover {
+      border-color: #c0d9cf;
+      transform: translateY(-3px);
+      box-shadow: 0 12px 24px -12px rgba(26, 93, 76, 0.12);
+    }
+
+    .card-icon {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+    }
+
+    .card h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #1a4a3e;
+    }
+    .card h3 .accent-text {
+      color: #c9512c;
+      font-weight: 600;
+    }
+
+    .card p {
+      font-size: 0.9rem;
+      color: #5e7c70;
+      line-height: 1.5;
+    }
+
+    /* Links section with green + warm accent */
+    .links-section {
+      background: #f5fbf8;
+      border-radius: 20px;
+      padding: 2rem;
+      margin: 2.5rem 0;
+      border: 1px solid #d9eee5;
+    }
+
+    .links-section h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #1a4a3e;
+    }
+    .links-section h3:before {
+      content: "▌";
+      color: #c9512c;
+      margin-right: 0.5rem;
+    }
+
+    .link-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .link-list a {
+      color: #1a5d4c;
+      text-decoration: none;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #cae3da;
+      font-weight: 500;
+    }
+
+    .link-list a:hover {
+      border-bottom-color: #c9512c;
+      color: #c9512c;
+    }
+
+    /* Status badge - subtle orange accent */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #f6fef9;
+      padding: 0.4rem 1rem;
+      border-radius: 40px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #1a5d4c;
+      border: 1px solid #cbe6dd;
+      margin: 1rem 0;
+    }
+    .dot-accent {
+      width: 8px;
+      height: 8px;
+      background: #c9512c;
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.4; transform: scale(0.8);}
+      100% { opacity: 1; transform: scale(1.2);}
+    }
+
+    /* Small accent hr */
+    hr {
+      border: none;
+      border-top: 1px solid #d4e8e0;
+      margin: 1rem 0;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 4rem;
+      padding: 2rem 0 3rem;
+      border-top: 1px solid #e0f0ea;
+      color: #7a9c8e;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    @media (max-width: 700px) {
+      .container {
+        padding: 0 1.5rem;
+      }
+      .hero h1 {
+        font-size: 2rem;
+      }
+      .section-title {
+        font-size: 1.4rem;
+      }
+      .logo-sub {
+        display: none;
+      }
+      .nav-link span.nav-label {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-inner">
+        <div class="logo">
+          DOA AI<span class="logo-accent"> Lab</span><span class="logo-sub">— architectural intelligence</span>
+        </div>
+        <nav class="header-nav">
+          <a href="https://store.doa-ailab.com" class="nav-link nav-link-app">🏪 Store Manager</a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="hero">
+      <h1>Developing & exploring <span class="ai-highlight">AI systems</span> across architectural workflows</h1>
+      <p>Department of Architecture · Ministry of Housing and Public Works, Bangladesh</p>
+      <div class="btn-group">
+        <a href="#" class="btn btn-primary" id="exploreBtn">Explore AI Sandbox →</a>
+      </div>
+      <div class="status-badge">
+        <span class="dot-accent"></span> Active development · multi-agent systems · sandbox preview
+      </div>
+    </div>
+
+    <!-- Workflow Pillars -->
+    <div>
+      <h2 class="section-title">AI x Architectural Workflows</h2>
+      <div class="section-sub">Intelligent systems for the entire building lifecycle</div>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">🏛️</div>
+        <h3>Generative <span class="accent-text">Design</span></h3>
+        <p>AI-assisted layout optimization and parametric modeling for housing and public buildings.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📐</div>
+        <h3>Code <span class="accent-text">Compliance</span></h3>
+        <p>Automated rule-checking for BNBC, fire safety, accessibility, and zoning regulations.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🗺️</div>
+        <h3>GIS + <span class="accent-text">BIM</span></h3>
+        <p>Connecting geospatial data with BIM for site planning and infrastructure coordination.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">👁️</div>
+        <h3>Computer <span class="accent-text">Vision</span></h3>
+        <p>Facade analysis, construction monitoring, and heritage documentation using vision AI.</p>
+      </div>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">🤖</div>
+        <h3>LLM <span class="accent-text">Assistants</span></h3>
+        <p>Conversational agents for tender docs, specifications, and code references.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📈</div>
+        <h3>Predictive <span class="accent-text">Analytics</span></h3>
+        <p>Forecasting cost trends, material availability, and energy performance.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚙️</div>
+        <h3>Multi-agent <span class="accent-text">Systems</span></h3>
+        <p>Simulating design-review agents and stakeholder feedback loops.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📡</div>
+        <h3>Open Data <span class="accent-text">Hub</span></h3>
+        <p>API-first platform sharing anonymized architectural datasets and benchmarks.</p>
+      </div>
+    </div>
+
+    <!-- External links section -->
+    <div class="links-section">
+      <h3>Official Resources</h3>
+      <div class="link-list">
+        <a href="https://architecture.gov.bd" target="_blank" rel="noopener noreferrer">Department of Architecture</a>
+        <a href="https://mohpw.gov.bd" target="_blank" rel="noopener noreferrer">Ministry of Housing & Public Works</a>
+        <a href="https://bangladesh.gov.bd" target="_blank" rel="noopener noreferrer">Bangladesh National Portal</a>
+        <a href="https://www.rajuk.gov.bd" target="_blank" rel="noopener noreferrer">RAJUK (Capital Development Authority)</a>
+        <a href="https://bnbc.architecture.gov.bd" target="_blank" rel="noopener noreferrer">Bangladesh National Building Code</a>
+        <a href="https://www.lged.gov.bd" target="_blank" rel="noopener noreferrer">LGED</a>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>Department of Architecture · Ministry of Housing and Public Works · Government of the People's Republic of Bangladesh</p>
+      <p style="margin-top: 0.5rem;">doa-ailab.com — research & exploration environment</p>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      function showMessage(msg) {
+        let toast = document.createElement('div');
+        toast.textContent = msg;
+        toast.style.position = 'fixed';
+        toast.style.bottom = '24px';
+        toast.style.left = '50%';
+        toast.style.transform = 'translateX(-50%)';
+        toast.style.backgroundColor = '#1a5d4c';
+        toast.style.color = 'white';
+        toast.style.padding = '10px 20px';
+        toast.style.borderRadius = '40px';
+        toast.style.fontSize = '0.85rem';
+        toast.style.fontWeight = '500';
+        toast.style.zIndex = '1000';
+        toast.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        toast.style.boxShadow = '0 4px 12px rgba(26, 93, 76, 0.25)';
+        toast.style.borderLeft = '3px solid #c9512c';
+        document.body.appendChild(toast);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => toast.remove(), 300);
+        }, 2500);
+      }
+
+      const exploreBtn = document.getElementById('exploreBtn');
+
+      if (exploreBtn) {
+        exploreBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          showMessage('🔬 AI Sandbox: exploring generative design, multi-agent workflows & compliance engines — prototype phase.');
+        });
+      }
+
+      const cards = document.querySelectorAll('.card');
+      cards.forEach(card => {
+        card.addEventListener('click', () => {
+          const title = card.querySelector('h3')?.innerText || 'module';
+          showMessage(`🧪 "${title}" — AI research integration in progress.`);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
