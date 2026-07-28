@@ -41,6 +41,7 @@ jobs:
           cp -r js dist/js 2>/dev/null || true
           cp -r css dist/css 2>/dev/null || true
           cp -r assets dist/assets 2>/dev/null || true
+          echo "store.doa-ailab.com" > dist/CNAME
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
