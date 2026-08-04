@@ -57,37 +57,92 @@
       display: flex;
       align-items: center;
       gap: 1.5rem;
+      position: relative;
     }
 
-    .nav-link {
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: #4a7064;
-      text-decoration: none;
-      padding: 0.45rem 1rem;
-      border-radius: 8px;
-      border: 1px solid transparent;
+    /* Burger Menu */
+    .burger-btn {
+      width: 42px;
+      height: 42px;
+      background: #f5fbf8;
+      border: 1px solid #cbe6dd;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+      color: #1a5d4c;
       transition: all 0.2s ease;
     }
-
-    .nav-link:hover {
-      color: #1a5d4c;
-      border-color: #d9eee5;
-      background: #f5fbf8;
-    }
-
-    .nav-link-app {
-      color: #1a5d4c;
-      font-weight: 600;
-      border-color: #cbe6dd;
-      background: #f5fbf8;
-    }
-
-    .nav-link-app:hover {
+    .burger-btn:hover {
       background: #1a5d4c;
       color: white;
       border-color: #1a5d4c;
     }
+
+    .store-dropdown {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      width: 220px;
+      background: #ffffff;
+      border: 1px solid #dceee6;
+      border-radius: 14px;
+      box-shadow: 0 8px 30px -8px rgba(26, 93, 76, 0.18);
+      overflow: hidden;
+      transform-origin: top right;
+      transform: scale(0.95);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.18s ease, opacity 0.18s ease;
+      z-index: 100;
+    }
+    .store-dropdown.open {
+      transform: scale(1);
+      opacity: 1;
+      pointer-events: all;
+    }
+    .dropdown-header {
+      padding: 0.7rem 1rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #9ab8ad;
+      border-bottom: 1px solid #eef5f2;
+    }
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      text-decoration: none;
+      color: #1a3a32;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: background 0.15s ease;
+    }
+    .dropdown-item:hover {
+      background: #f5fbf8;
+    }
+    .dropdown-item:hover .di-icon { background: #1a5d4c; color: white; }
+    .di-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+    .di-icon.blue  { background: #e8f4ff; color: #1a5d9e; }
+    .di-icon.green { background: #e8f7f2; color: #1a5d4c; }
+    .di-meta { display: flex; flex-direction: column; }
+    .di-name { font-weight: 600; color: #1a3a32; font-size: 0.85rem; }
+    .di-url  { font-size: 0.72rem; color: #9ab8ad; margin-top: 1px; }
 
     /* Hero */
     .hero {
@@ -316,8 +371,25 @@
         <div class="logo">
           DOA AI<span class="logo-accent"> Lab</span><span class="logo-sub">— architectural intelligence</span>
         </div>
-        <nav class="header-nav">
-          <a href="https://store.doa-ailab.com" class="nav-link nav-link-app">🏪 Store Manager</a>
+        <nav class="header-nav" id="storeNav">
+          <button class="burger-btn" id="burgerBtn" onclick="toggleMenu()" aria-label="Open store menu">☰</button>
+          <div class="store-dropdown" id="storeDropdown">
+            <div class="dropdown-header">Switch Store</div>
+            <a href="https://store.doa-ailab.com" class="dropdown-item" target="_blank">
+              <div class="di-icon green">🏪</div>
+              <div class="di-meta">
+                <span class="di-name">General Store</span>
+                <span class="di-url">store.doa-ailab.com</span>
+              </div>
+            </a>
+            <a href="https://store2.doa-ailab.com" class="dropdown-item" target="_blank">
+              <div class="di-icon blue">🛒</div>
+              <div class="di-meta">
+                <span class="di-name">Services Store</span>
+                <span class="di-url">store2.doa-ailab.com</span>
+              </div>
+            </a>
+          </div>
         </nav>
       </div>
     </div>
@@ -409,6 +481,21 @@
   </div>
 
   <script>
+    function toggleMenu() {
+      const dd = document.getElementById('storeDropdown');
+      const btn = document.getElementById('burgerBtn');
+      const isOpen = dd.classList.contains('open');
+      dd.classList.toggle('open');
+      btn.textContent = isOpen ? '☰' : '✕';
+    }
+    document.addEventListener('click', function(e) {
+      const nav = document.getElementById('storeNav');
+      if (nav && !nav.contains(e.target)) {
+        document.getElementById('storeDropdown').classList.remove('open');
+        document.getElementById('burgerBtn').textContent = '☰';
+      }
+    });
+
     (function() {
       function showMessage(msg) {
         let toast = document.createElement('div');
