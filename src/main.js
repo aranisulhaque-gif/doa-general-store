@@ -6,7 +6,7 @@ import {
     currentStoreId, currentUserRole, allStores, pagination, syncState,
     storeListenerUnsubscribe, setStoreListenerUnsubscribe, resetStoreData
 } from './core/state.js';
-import { exportStoreBackup, checkBackupPolicy, initBackupScheduler } from './core/backup.js';
+import { exportStoreBackup, checkBackupPolicy, initBackupScheduler, importOldJsonBackup } from './core/backup.js';
 import { renderUI } from './ui/render.js';
 import * as modals from './ui/modals.js';
 import * as dashboard from './ui/dashboard.js';
@@ -383,6 +383,7 @@ window.renderSavedReports = reports.renderSavedReports;
 window.viewSavedReport = reports.viewSavedReport;
 window.deleteSavedReport = reports.deleteSavedReport;
 window.forceSyncToDrive = exportStoreBackup;
+window.importOldJsonBackup = importOldJsonBackup;
 window.saveStoreData = saveStoreData;
 window.populateStoreSelector = populateStoreSelector;
 window.showMessageModal = showMessageModal;
