@@ -136,6 +136,19 @@ export async function importOldJsonBackup(event) {
                     // Handle old backups that used 'date' instead of 'timestamp'
                     if (obj.date && !obj.timestamp) obj.timestamp = obj.date;
                     
+                    // Normalize timestamp/date fields to ISO strings if they are numbers
+                    const dateFields = ['timestamp', 'lastResupplyDate'];
+                    dateFields.forEach(field => {
+                        if (obj[field] !== undefined && obj[field] !== null) {
+                            const val = obj[field];
+                            if (typeof val === 'number') {
+                                obj[field] = new Date(val).toISOString();
+                            } else if (typeof val === 'string' && /^\d+$/.test(val)) {
+                                obj[field] = new Date(parseInt(val, 10)).toISOString();
+                            }
+                        }
+                    });
+
                     // Strip any properties not present in the new Supabase schema (like lastModified)
                     const cleanObj = {};
                     for (const key of allowedKeys) {
