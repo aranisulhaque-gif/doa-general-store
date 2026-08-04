@@ -415,6 +415,7 @@ window.generateItemReport = reports.generateItemReport;
 window.generateEmployeeReport = reports.generateEmployeeReport;
 window.showDisbursementReportModal = reports.showDisbursementReportModal;
 window.showStoreReportModal = reports.showStoreReportModal;
+window.generateCurrentStockReport = reports.generateCurrentStockReport;
 window.renderSavedReports = reports.renderSavedReports;
 window.viewSavedReport = reports.viewSavedReport;
 window.deleteSavedReport = reports.deleteSavedReport;
