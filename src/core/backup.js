@@ -136,20 +136,45 @@ export async function importOldJsonBackup(event) {
                     // Handle old backups that used 'date' instead of 'timestamp'
                     if (obj.date && !obj.timestamp) obj.timestamp = obj.date;
                     
-                    // Normalize timestamp/date fields to ISO strings if they are numbers
+                    // Robust date normalization for Supabase timestamptz/text columns
                     const dateFields = ['timestamp', 'lastResupplyDate'];
                     dateFields.forEach(field => {
-                        if (obj[field] !== undefined && obj[field] !== null) {
+                        if (obj[field] !== undefined && obj[field] !== null && obj[field] !== '') {
                             const val = obj[field];
+                            let d = null;
+
                             if (typeof val === 'number') {
-                                obj[field] = new Date(val).toISOString();
-                            } else if (typeof val === 'string' && /^\d+$/.test(val)) {
-                                obj[field] = new Date(parseInt(val, 10)).toISOString();
+                                d = new Date(val);
+                            } else if (typeof val === 'string') {
+                                const trimmed = val.trim();
+                                if (/^\d+$/.test(trimmed)) {
+                                    const num = parseInt(trimmed, 10);
+                                    d = new Date(num < 10000000000 ? num * 1000 : num);
+                                } else {
+                                    d = new Date(trimmed);
+                                }
                             }
+
+                            if (d && !isNaN(d.getTime())) {
+                                obj[field] = d.toISOString();
+                            } else {
+                                delete obj[field];
+                            }
+                        } else {
+                            delete obj[field];
                         }
                     });
 
-                    // Strip any properties not present in the new Supabase schema (like lastModified)
+                    // Ensure numeric fields are numbers
+                    if (obj.quantity !== undefined) obj.quantity = parseInt(obj.quantity, 10) || 0;
+                    if (obj.totalItems !== undefined) obj.totalItems = parseInt(obj.totalItems, 10) || 0;
+
+                    // Ensure items array for JSONB columns
+                    if ((table === 'disbursements' || table === 'returns') && (!obj.items || !Array.isArray(obj.items))) {
+                        obj.items = Array.isArray(r.items) ? r.items : [];
+                    }
+
+                    // Strip any properties not present in the Supabase schema
                     const cleanObj = {};
                     for (const key of allowedKeys) {
                         if (obj[key] !== undefined) cleanObj[key] = obj[key];

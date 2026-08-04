@@ -437,8 +437,6 @@ window.showConfirmationModal = showConfirmationModal;
 // =========================================================================
 // AUTH STATE LISTENER
 // =========================================================================
-import * as userManagement from './ui/userManagement.js';
-
 supabase.auth.onAuthStateChange(async (event, session) => {
     const user = session?.user;
     if (user) {
@@ -462,16 +460,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         document.getElementById('userName').textContent = role === 'Admin' ? 'Admin User' : username;
         document.getElementById('userRole').textContent = role === 'Admin' ? 'Administrator' : role;
         document.getElementById('userInitials').textContent = role === 'Admin' ? 'A' : username.substring(0, 2).toUpperCase();
-
-        // Control User Management sidebar visibility
-        const navUserMgmt = document.getElementById('navUserManagement');
-        if (navUserMgmt) {
-            if (role === 'Admin' || role === 'Manager') {
-                navUserMgmt.classList.remove('hidden');
-            } else {
-                navUserMgmt.classList.add('hidden');
-            }
-        }
 
         localStorage.setItem('isLoggedIn', 'true');
         document.getElementById('loginPage')?.classList.add('hidden');
@@ -497,8 +485,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         localStorage.removeItem('isLoggedIn');
         document.getElementById('appContainer')?.classList.add('hidden');
         document.getElementById('loginPage')?.classList.remove('hidden');
-        const navUserMgmt = document.getElementById('navUserManagement');
-        if (navUserMgmt) navUserMgmt.classList.add('hidden');
     }
 });
 
