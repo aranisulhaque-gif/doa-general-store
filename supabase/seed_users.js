@@ -27,11 +27,11 @@ const supabase = createClient(SUPABASE_URL, serviceRoleKey, {
 // Default password: "doa2026!" — change in the Supabase Dashboard after creation
 const USERS = [
     { email: 'admin@storemanager.app',       password: 'doa2026!', role: 'Admin' },
-    { email: 'doa.establishment@gmail.com',   password: 'doa2026!', role: 'Admin' },
-    { email: 'raquib@generalstore.app',       password: 'doa2026!', role: 'Admin' },
-    { email: 'rubel@generalstore.app',        password: 'doa2026!', role: 'Admin' },
-    { email: 'bulbul@generalstore.app',       password: 'doa2026!', role: 'Manager' },
-    { email: 'saddam@generalstore.app',       password: 'doa2026!', role: 'Manager' },
+    { email: 'doa.establishment@gmail.com',   password: 'ds.Arch2018', role: 'Manager' },
+    { email: 'raquib@generalstore.app',       password: 'Raquib2026', role: 'Manager' },
+    { email: 'rubel@generalstore.app',        password: 'Rubel2026', role: 'Manager' },
+    { email: 'bulbul@generalstore.app',       password: 'Bulbul@2026', role: 'Storekeeper' },
+    { email: 'saddam@generalstore.app',       password: 'Saddam@2026', role: 'Storekeeper' },
 ];
 
 async function seedUsers() {
