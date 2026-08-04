@@ -188,12 +188,14 @@ export async function importOldJsonBackup(event) {
                         if (error) throw new Error(`Clear ${table} failed: ${error.message}`);
                     }
 
-                    // 3. Re-insert from backup
-                    await insertAll('inventory',     s.inventory,     storeId);
-                    await insertAll('employees',     s.employees,     storeId);
-                    await insertAll('disbursements', s.disbursements, storeId);
-                    await insertAll('returns',       s.returns,       storeId);
-                    await insertAll('resupplies',    s.resupplies,    storeId);
+                    // 3. Re-insert from backup concurrently
+                    await Promise.all([
+                        insertAll('inventory',     s.inventory,     storeId),
+                        insertAll('employees',     s.employees,     storeId),
+                        insertAll('disbursements', s.disbursements, storeId),
+                        insertAll('returns',       s.returns,       storeId),
+                        insertAll('resupplies',    s.resupplies,    storeId)
+                    ]);
                 }
 
                 overlay.remove();
