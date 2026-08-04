@@ -228,8 +228,16 @@ async function loadStoreData() {
         if (display) display.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i> Loading...`;
 
         // 1. Fetch store metadata
-        const { data: storeInfo, error: storeError } = await supabase.from('stores').select('*').eq('id', currentStoreId).single();
+        const { data: storeInfo, error: storeError } = await supabase.from('stores').select('*').eq('id', currentStoreId).maybeSingle();
         if (storeError) throw storeError;
+        if (!storeInfo) {
+            // Stale store ID in localStorage — clear it and refresh selector
+            setStoredStoreId(null);
+            setCurrentStoreId(null);
+            if (display) display.innerHTML = `<i class="fas fa-store mr-1"></i> Select a store`;
+            await populateStoreSelector();
+            return;
+        }
 
         if (storeInfo) {
             resetStoreData();
@@ -440,7 +448,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
             .from('user_roles')
             .select('role')
             .eq('email', email)
-            .single();
+            .maybeSingle();
 
         let role = 'Restricted';
         if (!error && roleData) {

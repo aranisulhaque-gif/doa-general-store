@@ -1,0 +1,138 @@
+-- ============================================================
+-- DOA Services Store — Supabase Database Schema & Setup
+-- ============================================================
+
+-- 1. STORES
+CREATE TABLE IF NOT EXISTS public.stores (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    location TEXT DEFAULT '',
+    last_modified TIMESTAMPTZ DEFAULT now()
+);
+
+-- 2. INVENTORY
+CREATE TABLE IF NOT EXISTS public.inventory (
+    id TEXT PRIMARY KEY,
+    store_id TEXT REFERENCES public.stores(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    specification TEXT DEFAULT '',
+    quantity INTEGER DEFAULT 0,
+    "lastResupplyDate" TEXT,
+    "latestTenderId" TEXT
+);
+
+-- 3. EMPLOYEES
+CREATE TABLE IF NOT EXISTS public.employees (
+    id TEXT PRIMARY KEY,
+    store_id TEXT REFERENCES public.stores(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    designation TEXT DEFAULT ''
+);
+
+-- 4. DISBURSEMENTS
+CREATE TABLE IF NOT EXISTS public.disbursements (
+    id TEXT PRIMARY KEY,
+    store_id TEXT REFERENCES public.stores(id) ON DELETE CASCADE,
+    "recipientId" TEXT,
+    "recipientName" TEXT,
+    items JSONB DEFAULT '[]',
+    "totalItems" INTEGER DEFAULT 0,
+    timestamp TIMESTAMPTZ DEFAULT now()
+);
+
+-- 5. RETURNS
+CREATE TABLE IF NOT EXISTS public.returns (
+    id TEXT PRIMARY KEY,
+    store_id TEXT REFERENCES public.stores(id) ON DELETE CASCADE,
+    "recipientId" TEXT,
+    "recipientName" TEXT,
+    items JSONB DEFAULT '[]',
+    "totalItems" INTEGER DEFAULT 0,
+    timestamp TIMESTAMPTZ DEFAULT now()
+);
+
+-- 6. RESUPPLIES
+CREATE TABLE IF NOT EXISTS public.resupplies (
+    id TEXT PRIMARY KEY,
+    store_id TEXT REFERENCES public.stores(id) ON DELETE CASCADE,
+    "itemId" TEXT,
+    "itemName" TEXT,
+    quantity INTEGER DEFAULT 0,
+    "tenderId" TEXT,
+    timestamp TIMESTAMPTZ DEFAULT now()
+);
+
+-- 7. EVENT LOGS
+CREATE TABLE IF NOT EXISTS public.event_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    store_id TEXT REFERENCES public.stores(id) ON DELETE CASCADE,
+    action TEXT,
+    details TEXT,
+    metadata JSONB DEFAULT '{}',
+    "user" TEXT,
+    user_role TEXT,
+    timestamp TIMESTAMPTZ DEFAULT now(),
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 8. USER ROLES (role-based access mapping)
+CREATE TABLE IF NOT EXISTS public.user_roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT UNIQUE NOT NULL,
+    role TEXT NOT NULL DEFAULT 'Restricted'
+);
+
+-- ============================================================
+-- ROW LEVEL SECURITY
+-- ============================================================
+ALTER TABLE public.stores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.disbursements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.returns ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.resupplies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.event_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users full access" ON public.stores FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users full access" ON public.inventory FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users full access" ON public.employees FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users full access" ON public.disbursements FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users full access" ON public.returns FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users full access" ON public.resupplies FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users full access" ON public.event_logs FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users read own role" ON public.user_roles FOR SELECT USING (auth.role() = 'authenticated');
+
+-- ============================================================
+-- INDEXES
+-- ============================================================
+CREATE INDEX IF NOT EXISTS idx_inventory_store ON public.inventory(store_id);
+CREATE INDEX IF NOT EXISTS idx_employees_store ON public.employees(store_id);
+CREATE INDEX IF NOT EXISTS idx_disbursements_store ON public.disbursements(store_id);
+CREATE INDEX IF NOT EXISTS idx_returns_store ON public.returns(store_id);
+CREATE INDEX IF NOT EXISTS idx_resupplies_store ON public.resupplies(store_id);
+CREATE INDEX IF NOT EXISTS idx_event_logs_store ON public.event_logs(store_id);
+CREATE INDEX IF NOT EXISTS idx_event_logs_timestamp ON public.event_logs(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_user_roles_email ON public.user_roles(email);
+
+-- ============================================================
+-- SEED: Custom Auth Users and Roles for Services Store
+-- ============================================================
+-- 1. Insert new users into Supabase Auth
+INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, role, confirmation_token, email_change, email_change_token_new, recovery_token)
+VALUES
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'doaservices.store@gmail.com', crypt('ds.Arch2018', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), 'authenticated', '', '', '', ''),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'yusuf@servicesstore.app', crypt('yusuf@2026', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), 'authenticated', '', '', '', ''),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'sskabir@servicesstore.app', crypt('sskabir@2026', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), 'authenticated', '', '', '', ''),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'mithu@servicesstore.app', crypt('mithu2026@doa', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), 'authenticated', '', '', '', ''),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'storekeeper@servicesstore.app', crypt('storekeeper2026@doa', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), 'authenticated', '', '', '', '');
+
+-- 2. Map their roles in the public schema
+INSERT INTO public.user_roles (email, role)
+VALUES
+  ('doaservices.store@gmail.com', 'Manager'),
+  ('yusuf@servicesstore.app', 'Manager'),
+  ('sskabir@servicesstore.app', 'Manager'),
+  ('mithu@servicesstore.app', 'Storekeeper'),
+  ('storekeeper@servicesstore.app', 'Storekeeper')
+ON CONFLICT (email) DO NOTHING;
