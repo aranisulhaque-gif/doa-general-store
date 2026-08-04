@@ -45,9 +45,9 @@
                     <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Switch Store</p>
                 </div>
                 <div class="p-2 space-y-1">
-                    <a href="https://store.doa-ailab.com" target="_blank"
+                    <a href="https://store.doa-ailab.com" target="_blank" id="lnkGeneralStore"
                         class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50 transition-colors group">
-                        <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
+                        <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors animate-icon">
                             <i class="fas fa-store text-blue-600 text-xs"></i>
                         </div>
                         <div>
@@ -56,9 +56,9 @@
                         </div>
                         <i class="fas fa-external-link-alt text-slate-300 text-xs ml-auto group-hover:text-blue-400 transition-colors"></i>
                     </a>
-                    <a href="https://store2.doa-ailab.com" target="_blank"
+                    <a href="https://store2.doa-ailab.com" target="_blank" id="lnkServicesStore"
                         class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-emerald-50 transition-colors group">
-                        <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-200 transition-colors">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-200 transition-colors animate-icon">
                             <i class="fas fa-store-alt text-emerald-600 text-xs"></i>
                         </div>
                         <div>
@@ -136,6 +136,35 @@
                 dropdown.classList.add('scale-95', 'opacity-0', 'pointer-events-none');
                 const icon = document.getElementById('burgerIcon');
                 if (icon) icon.className = 'fas fa-bars text-base';
+            }
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            const host = window.location.hostname;
+            const lnkGeneral = document.getElementById('lnkGeneralStore');
+            const lnkServices = document.getElementById('lnkServicesStore');
+
+            if (host === 'store.doa-ailab.com') {
+                if (lnkGeneral) {
+                    lnkGeneral.removeAttribute('href');
+                    lnkGeneral.style.pointerEvents = 'none';
+                    lnkGeneral.style.opacity = '0.6';
+                    const currentBadge = document.createElement('span');
+                    currentBadge.className = 'text-[9px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-md ml-auto';
+                    currentBadge.textContent = 'Active';
+                    const extIcon = lnkGeneral.querySelector('.fa-external-link-alt');
+                    if (extIcon) extIcon.replaceWith(currentBadge);
+                }
+            } else if (host === 'store2.doa-ailab.com') {
+                if (lnkServices) {
+                    lnkServices.removeAttribute('href');
+                    lnkServices.style.pointerEvents = 'none';
+                    lnkServices.style.opacity = '0.6';
+                    const currentBadge = document.createElement('span');
+                    currentBadge.className = 'text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md ml-auto';
+                    currentBadge.textContent = 'Active';
+                    const extIcon = lnkServices.querySelector('.fa-external-link-alt');
+                    if (extIcon) extIcon.replaceWith(currentBadge);
+                }
             }
         });
     </script>
