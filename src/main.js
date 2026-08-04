@@ -99,8 +99,12 @@ async function populateStoreSelector() {
             storeListBody.innerHTML = '';
             Object.entries(allStores).forEach(([id, store]) => {
                 const row = storeListBody.insertRow();
-                const deleteBtn = currentUserRole === 'Admin'
-                    ? `<button type="button" onclick="deleteStore('${id}')" class="compact-button skeuo-btn btn-danger"><i class="fas fa-trash"></i></button>`
+                const canManage = currentUserRole === 'Admin' || currentUserRole === 'Manager';
+                const renameBtn = canManage
+                    ? `<button type="button" onclick="renameStore('${id}')" class="compact-button skeuo-btn btn-secondary mr-1" title="Rename Store"><i class="fas fa-edit"></i></button>`
+                    : '';
+                const deleteBtn = canManage
+                    ? `<button type="button" onclick="deleteStore('${id}')" class="compact-button skeuo-btn btn-danger" title="Delete Store"><i class="fas fa-trash"></i></button>`
                     : '';
 
                 row.innerHTML = `
@@ -108,8 +112,9 @@ async function populateStoreSelector() {
                     <td class="px-4 py-3 table-cell font-semibold text-slate-700">${store.name || 'N/A'}</td>
                     <td class="px-4 py-3 table-cell text-slate-500">${store.location || 'N/A'}</td>
                     <td class="px-4 py-3 table-cell">
-                        <div class="flex items-center gap-2">
-                            <button onclick="switchStore('${id}')" class="compact-button btn-primary px-3">Select</button>
+                        <div class="flex items-center justify-end gap-1">
+                            <button onclick="switchStore('${id}')" class="compact-button btn-primary px-3 mr-2">Select</button>
+                            ${renameBtn}
                             ${deleteBtn}
                         </div>
                     </td>
@@ -158,7 +163,7 @@ export function switchStore(newStoreId) {
 }
 
 export async function deleteStore(storeId) {
-    if (currentUserRole !== 'Admin') return showMessageModal('Denied', 'Only Admin can delete stores.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Only Admin and Managers can delete stores.');
 
     showConfirmationModal(
         "Delete Entire Store",
@@ -184,6 +189,36 @@ export async function deleteStore(storeId) {
             }
         }
     );
+}
+
+export async function renameStore(storeId) {
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Only Admin and Managers can rename stores.');
+
+    const newName = prompt(`Enter new name for store "${storeId}":`);
+    if (!newName || !newName.trim()) return;
+
+    try {
+        const { error } = await supabase.from('stores').update({
+            name: newName.trim(),
+            last_modified: new Date().toISOString()
+        }).eq('id', storeId);
+        
+        if (error) throw error;
+
+        await logAuditAction('STORE_RENAMED', `Renamed store ${storeId} to ${newName.trim()}`);
+        await populateStoreSelector();
+        renderUI();
+        
+        if (currentStoreId === storeId) {
+            const display = document.getElementById('currentStoreDisplay');
+            if (display) display.innerHTML = `<i class="fas fa-store mr-1"></i> ${newName.trim()}`;
+        }
+        
+        showMessageModal("Success", `Store renamed to ${newName.trim()}.`);
+    } catch (e) {
+        console.error("Error renaming store:", e);
+        showMessageModal("Error", "Failed to rename store.");
+    }
 }
 
 async function loadStoreData() {
@@ -337,6 +372,7 @@ window.addItem = inventory.addItem;
 window.resupplyItem = inventory.resupplyItem;
 window.addEmployee = employees.addEmployee;
 window.deleteStore = deleteStore;
+window.renameStore = renameStore;
 window.filterEmployees = employees.renderEmployees;
 window.editItem = inventory.editItem;
 window.editEmployee = employees.editEmployee;
