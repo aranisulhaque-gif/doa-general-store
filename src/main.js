@@ -341,7 +341,6 @@ window.filterEmployees = employees.renderEmployees;
 window.editItem = inventory.editItem;
 window.editEmployee = employees.editEmployee;
 window.deleteItemConfirmation = inventory.deleteItemConfirmation;
-window.orchestrateSync = orchestrateSync;
 window.checkBackupPolicy = checkBackupPolicy;
 window.deleteEmployeeConfirmation = employees.deleteEmployeeConfirmation;
 window.recordDisbursement = disbursements.recordDisbursement;
