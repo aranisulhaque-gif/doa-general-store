@@ -119,9 +119,31 @@ export async function importOldJsonBackup(event) {
                 return out;
             };
 
+            const schemas = {
+                inventory: ['id', 'store_id', 'name', 'specification', 'quantity', 'lastResupplyDate', 'latestTenderId'],
+                employees: ['id', 'store_id', 'name', 'designation'],
+                disbursements: ['id', 'store_id', 'recipientId', 'recipientName', 'items', 'totalItems', 'timestamp'],
+                returns: ['id', 'store_id', 'recipientId', 'recipientName', 'items', 'totalItems', 'timestamp'],
+                resupplies: ['id', 'store_id', 'itemId', 'itemName', 'quantity', 'tenderId', 'timestamp']
+            };
+
             const insertAll = async (table, rows, storeId) => {
                 if (!rows || rows.length === 0) return;
-                const tagged = rows.map(r => ({ ...r, store_id: storeId }));
+                const allowedKeys = schemas[table] || [];
+                
+                const tagged = rows.map(r => {
+                    const obj = { ...r, store_id: storeId };
+                    // Handle old backups that used 'date' instead of 'timestamp'
+                    if (obj.date && !obj.timestamp) obj.timestamp = obj.date;
+                    
+                    // Strip any properties not present in the new Supabase schema (like lastModified)
+                    const cleanObj = {};
+                    for (const key of allowedKeys) {
+                        if (obj[key] !== undefined) cleanObj[key] = obj[key];
+                    }
+                    return cleanObj;
+                });
+
                 for (const batch of chunk(tagged, 500)) {
                     const { error } = await supabase.from(table).insert(batch);
                     if (error) throw new Error(`Insert into ${table} failed: ${error.message}`);
