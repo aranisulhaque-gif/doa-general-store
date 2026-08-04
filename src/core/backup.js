@@ -1,83 +1,188 @@
 import { storeData, currentStoreId } from './state.js';
 import { supabase } from './supabase.js';
 
+// ── Store selector modal for import ────────────────────────────────────────
+function buildImportStoreModal(storeMap, onConfirm) {
+    const existing = document.getElementById('importStoreSelectModal');
+    if (existing) existing.remove();
+
+    const storeIds = Object.keys(storeMap);
+    const rows = storeIds.map(id => {
+        const s = storeMap[id];
+        const inv = (s.inventory || []).length;
+        const emp = (s.employees || []).length;
+        const dis = (s.disbursements || []).length;
+        return `
+        <label class="flex items-start gap-3 p-3 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
+          <input type="checkbox" name="importStoreCheck" value="${id}"
+            class="mt-0.5 w-4 h-4 accent-amber-600 flex-shrink-0" checked>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-slate-800 text-sm">${s.name || id}</div>
+            <div class="text-xs text-slate-500 mt-0.5">${s.location ? s.location + ' · ' : ''}<span class="font-mono text-slate-400">${id}</span></div>
+            <div class="flex gap-3 mt-1 text-xs text-slate-500">
+              <span><i class="fas fa-boxes mr-1 text-blue-400"></i>${inv} items</span>
+              <span><i class="fas fa-users mr-1 text-purple-400"></i>${emp} employees</span>
+              <span><i class="fas fa-exchange-alt mr-1 text-green-400"></i>${dis} disbursements</span>
+            </div>
+          </div>
+        </label>`;
+    }).join('');
+
+    const modal = document.createElement('div');
+    modal.id = 'importStoreSelectModal';
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm';
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+        <div class="p-6 border-b border-slate-100">
+          <h3 class="text-xl font-bold text-slate-800">
+            <i class="fas fa-file-import mr-2 text-amber-500"></i>Select Stores to Import
+          </h3>
+          <p class="text-sm text-slate-500 mt-1">
+            ${storeIds.length} store(s) found in backup. Check the ones you want to import.
+            <br><span class="text-red-500 font-semibold">⚠ Existing data in selected stores will be wiped.</span>
+          </p>
+        </div>
+        <div class="p-4 max-h-80 overflow-y-auto space-y-2">${rows}</div>
+        <div class="p-4 border-t border-slate-100 flex items-center justify-between gap-3">
+          <label class="flex items-center gap-2 text-xs text-slate-500 cursor-pointer select-none">
+            <input id="importSelectAllChk" type="checkbox" checked class="accent-amber-600 w-4 h-4">
+            Select / Deselect All
+          </label>
+          <div class="flex gap-2">
+            <button id="importCancelBtn"
+              class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+              Cancel
+            </button>
+            <button id="importConfirmBtn"
+              class="px-5 py-2 rounded-lg bg-amber-600 text-white text-sm font-bold hover:bg-amber-700 transition-colors shadow">
+              <i class="fas fa-file-import mr-1"></i>Import Selected
+            </button>
+          </div>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+
+    // Select/Deselect all
+    document.getElementById('importSelectAllChk').addEventListener('change', (e) => {
+        modal.querySelectorAll('[name="importStoreCheck"]').forEach(cb => cb.checked = e.target.checked);
+    });
+
+    document.getElementById('importCancelBtn').addEventListener('click', () => modal.remove());
+
+    document.getElementById('importConfirmBtn').addEventListener('click', () => {
+        const selected = [...modal.querySelectorAll('[name="importStoreCheck"]:checked')].map(cb => cb.value);
+        if (selected.length === 0) { alert('Please select at least one store.'); return; }
+        modal.remove();
+        onConfirm(selected);
+    });
+}
+
 /**
- * Imports an old JSON backup file, wipes existing Supabase data
- * for the current store, and re-populates it from the JSON.
+ * Reads an old multi-store JSON backup, shows a store-selection modal,
+ * then wipes and re-populates the selected stores in Supabase.
  */
 export async function importOldJsonBackup(event) {
     const file = event.target.files[0];
     if (!file) return;
-    if (!currentStoreId) {
-        alert('No store selected. Please select a store first.');
-        return;
-    }
-
-    // Reset the input so the same file can be re-selected if needed
     event.target.value = '';
 
     const reader = new FileReader();
     reader.onload = async (e) => {
         let parsed;
-        try {
-            parsed = JSON.parse(e.target.result);
-        } catch {
-            alert('Invalid JSON file. Please select a valid DOA backup.');
-            return;
+        try { parsed = JSON.parse(e.target.result); }
+        catch { alert('Invalid JSON file. Please select a valid DOA backup.'); return; }
+
+        // ── Detect format ──────────────────────────────────────────────────
+        // Old multi-store format: { storeId: { name, inventory, employees, … } }
+        // New single-store format: { inventory: [], employees: [], … }
+        let storeMap = {};
+        const isMultiStore = typeof parsed === 'object' && !Array.isArray(parsed)
+            && !Array.isArray(parsed.inventory)
+            && Object.values(parsed).every(v => typeof v === 'object' && !Array.isArray(v) && ('inventory' in v || 'employees' in v));
+
+        if (isMultiStore) {
+            storeMap = parsed;
+        } else {
+            // Single-store: wrap in a map using currentStoreId
+            if (!currentStoreId) { alert('No store selected. Select a store first.'); return; }
+            storeMap = { [currentStoreId]: parsed };
         }
 
-        // Confirm before wiping
-        const confirmMsg =
-            `⚠️ This will DELETE all existing data in the current store and replace it with the backup.\n\n` +
-            `Store: ${currentStoreId}\n` +
-            `Backup contains:\n` +
-            `  • Inventory: ${(parsed.inventory || []).length} items\n` +
-            `  • Employees: ${(parsed.employees || []).length}\n` +
-            `  • Disbursements: ${(parsed.disbursements || []).length}\n` +
-            `  • Returns: ${(parsed.returns || []).length}\n` +
-            `  • Resupplies: ${(parsed.resupplies || []).length}\n\n` +
-            `Are you sure you want to proceed?`;
+        if (Object.keys(storeMap).length === 0) { alert('No stores found in the backup file.'); return; }
 
-        if (!window.confirm(confirmMsg)) return;
-
-        try {
-            // 1. Wipe all existing data for this store
-            const tables = ['inventory', 'employees', 'disbursements', 'returns', 'resupplies'];
-            for (const table of tables) {
-                const { error } = await supabase.from(table).delete().eq('store_id', currentStoreId);
-                if (error) throw new Error(`Failed to clear ${table}: ${error.message}`);
-            }
-
-            // 2. Helper to chunk array for batch inserts (Supabase limit: 1000 rows)
+        // ── Show store-selection modal ─────────────────────────────────────
+        buildImportStoreModal(storeMap, async (selectedIds) => {
             const chunk = (arr, size) => {
-                const chunks = [];
-                for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
-                return chunks;
+                const out = [];
+                for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+                return out;
             };
 
-            // 3. Re-insert each collection, injecting store_id
-            const insertAll = async (table, rows) => {
+            const insertAll = async (table, rows, storeId) => {
                 if (!rows || rows.length === 0) return;
-                const tagged = rows.map(r => ({ ...r, store_id: currentStoreId }));
+                const tagged = rows.map(r => ({ ...r, store_id: storeId }));
                 for (const batch of chunk(tagged, 500)) {
                     const { error } = await supabase.from(table).insert(batch);
-                    if (error) throw new Error(`Failed to insert into ${table}: ${error.message}`);
+                    if (error) throw new Error(`Insert into ${table} failed: ${error.message}`);
                 }
             };
 
-            await insertAll('inventory',     parsed.inventory);
-            await insertAll('employees',     parsed.employees);
-            await insertAll('disbursements', parsed.disbursements);
-            await insertAll('returns',       parsed.returns);
-            await insertAll('resupplies',    parsed.resupplies);
+            // Show progress overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'importProgressOverlay';
+            overlay.className = 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm text-white text-center';
+            overlay.innerHTML = `<div class="text-5xl mb-4"><i class="fas fa-spinner fa-spin"></i></div>
+              <div class="text-xl font-bold" id="importProgressMsg">Importing stores…</div>
+              <div class="text-sm text-white/70 mt-2" id="importProgressSub"></div>`;
+            document.body.appendChild(overlay);
 
-            alert('✅ Import successful! The page will now reload to reflect the new data.');
-            window.location.reload();
+            const setProgress = (msg, sub = '') => {
+                document.getElementById('importProgressMsg').textContent = msg;
+                document.getElementById('importProgressSub').textContent = sub;
+            };
 
-        } catch (err) {
-            console.error('Import failed:', err);
-            alert(`❌ Import failed: ${err.message}`);
-        }
+            try {
+                const tables = ['inventory', 'employees', 'disbursements', 'returns', 'resupplies'];
+                let done = 0;
+
+                for (const storeId of selectedIds) {
+                    const s = storeMap[storeId];
+                    done++;
+                    setProgress(`Importing ${s.name || storeId}…`, `Store ${done} of ${selectedIds.length}`);
+
+                    // 1. Upsert the store record itself
+                    const { error: storeErr } = await supabase.from('stores').upsert({
+                        id: storeId,
+                        name: s.name || storeId,
+                        location: s.location || '',
+                        last_modified: new Date().toISOString()
+                    });
+                    if (storeErr) throw new Error(`Store upsert failed: ${storeErr.message}`);
+
+                    // 2. Wipe existing collections
+                    for (const table of tables) {
+                        const { error } = await supabase.from(table).delete().eq('store_id', storeId);
+                        if (error) throw new Error(`Clear ${table} failed: ${error.message}`);
+                    }
+
+                    // 3. Re-insert from backup
+                    await insertAll('inventory',     s.inventory,     storeId);
+                    await insertAll('employees',     s.employees,     storeId);
+                    await insertAll('disbursements', s.disbursements, storeId);
+                    await insertAll('returns',       s.returns,       storeId);
+                    await insertAll('resupplies',    s.resupplies,    storeId);
+                }
+
+                overlay.remove();
+                alert(`✅ Import complete! ${selectedIds.length} store(s) imported successfully.\nThe page will now reload.`);
+                window.location.reload();
+            } catch (err) {
+                overlay.remove();
+                console.error('Import failed:', err);
+                alert(`❌ Import failed: ${err.message}`);
+            }
+        });
     };
     reader.readAsText(file);
 }
