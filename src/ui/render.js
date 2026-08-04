@@ -44,7 +44,7 @@ export function renderUI() {
                 'dashNewDisbursementBtn', 'dashBatchDisbursementBtn', 'newDisbursementBtn',
                 'batchDisbursementBtn', 'recordReturnBtn', 'itemReportBtn',
                 'inventoryStoreReportBtn', 'employeeReportBtn', 'disbursementStoreReportBtn',
-                'csvImportBtn'
+                'csvImportBtn', 'navStoreManagement'
             ];
             managerAllowed.forEach(id => {
                 document.getElementById(id)?.classList.remove('hidden');
