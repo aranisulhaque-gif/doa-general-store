@@ -247,6 +247,10 @@
                     <i class="fas fa-store"></i>
                     <span>Store Management</span>
                 </div>
+                <div class="sidebar-item hidden" data-tab="user-management" id="navUserManagement">
+                    <i class="fas fa-user-shield"></i>
+                    <span>User Management</span>
+                </div>
             </nav>
             <div class="p-8">
                 <span class="text-[10px] text-white/40">System Release v2.5.0</span>
@@ -996,6 +1000,40 @@
 
                     </div>
                 </div>
+
+                <!-- User Management Tab -->
+                <div id="user-management" class="tab-content hidden h-full flex flex-col">
+                    <div class="flex items-center justify-between mb-8">
+                        <h2 class="text-2xl font-bold text-slate-800">User Management</h2>
+                        <button onclick="showAddUserModal()"
+                            class="px-5 py-3 bg-violet-600 text-white rounded-xl text-xs font-bold shadow-md shadow-violet-200 hover:bg-violet-700 hover:-translate-y-0.5 transition-all flex items-center gap-2 skeuo-btn">
+                            <i class="fas fa-user-plus text-sm"></i> Add New User
+                        </button>
+                    </div>
+
+                    <div class="glass-card flex flex-col h-full min-h-[400px]">
+                        <div class="p-5 border-b border-slate-100/50 flex justify-between items-center">
+                            <h3 class="font-bold text-lg text-slate-800"><i class="fas fa-users-cog mr-2 text-violet-500"></i>Active Users</h3>
+                        </div>
+
+                        <div class="p-0 flex-grow overflow-hidden rounded-b-xl relative">
+                            <div class="absolute inset-0 overflow-y-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 sticky top-0 z-10">
+                                            <th class="px-6 py-4 font-bold">Email</th>
+                                            <th class="px-6 py-4 font-bold">Role</th>
+                                            <th class="px-6 py-4 font-bold text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="userList" class="divide-y divide-slate-100/50 bg-white/40">
+                                        <!-- User list populated here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 </section>
             </main>
 
@@ -1399,6 +1437,50 @@
                         <button type="submit"
                             class="px-8 py-3 bg-red-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-200 hover:bg-red-700 hover:-translate-y-0.5 transition-all skeuo-btn">
                             Delete Permanently
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add User Modal -->
+        <div id="addUserModal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-backdrop">
+            <div class="glass-modal max-w-md animate-scale-in">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-2xl font-bold text-slate-800"><i class="fas fa-user-plus mr-2 text-violet-600"></i>Add New User</h3>
+                    <button onclick="hideModal('addUserModal')" class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="addUserForm" class="space-y-5" onsubmit="addUser(event)">
+                    <div>
+                        <label for="addUserEmail" class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Email Address</label>
+                        <input type="email" id="addUserEmail" name="addUserEmail" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-violet-400 transition-all font-medium"
+                            placeholder="user@example.com">
+                    </div>
+                    <div>
+                        <label for="addUserPassword" class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Password</label>
+                        <input type="password" id="addUserPassword" name="addUserPassword" required minlength="8"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-violet-400 transition-all font-medium"
+                            placeholder="Min. 8 characters">
+                    </div>
+                    <div>
+                        <label for="addUserRole" class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Role</label>
+                        <select id="addUserRole" name="addUserRole" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-violet-400 transition-all font-medium">
+                            <option value="">Select a role...</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Storekeeper">Storekeeper</option>
+                            <option value="Restricted">Restricted</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" onclick="hideModal('addUserModal')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-violet-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-violet-200 hover:bg-violet-700 hover:-translate-y-0.5 transition-all skeuo-btn">
+                            <i class="fas fa-user-plus mr-2"></i>Create User
                         </button>
                     </div>
                 </form>
