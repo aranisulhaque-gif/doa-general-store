@@ -145,7 +145,7 @@ export async function importOldJsonBackup(event) {
                 });
 
                 for (const batch of chunk(tagged, 500)) {
-                    const { error } = await supabase.from(table).insert(batch);
+                    const { error } = await supabase.from(table).upsert(batch);
                     if (error) throw new Error(`Insert into ${table} failed: ${error.message}`);
                 }
             };
