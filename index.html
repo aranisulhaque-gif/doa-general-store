@@ -29,6 +29,48 @@
 
     <!-- Login Page -->
     <div id="loginPage" class="fixed inset-0 bg-surface-color flex items-center justify-center z-50">
+
+        <!-- Burger Menu (Top Right) -->
+        <div class="absolute top-5 right-5" id="storeNavMenu">
+            <button id="burgerBtn" onclick="toggleStoreMenu()"
+                class="w-11 h-11 rounded-xl bg-white/80 backdrop-blur border border-slate-200 shadow-md flex items-center justify-center text-slate-600 hover:bg-white hover:shadow-lg transition-all duration-200 active:scale-95">
+                <i class="fas fa-bars text-base" id="burgerIcon"></i>
+            </button>
+
+            <!-- Dropdown -->
+            <div id="storeDropdown"
+                class="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden origin-top-right transition-all duration-200 scale-95 opacity-0 pointer-events-none"
+                style="transform-origin: top right;">
+                <div class="px-4 py-3 border-b border-slate-50">
+                    <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Switch Store</p>
+                </div>
+                <div class="p-2 space-y-1">
+                    <a href="https://store.doa-ailab.com" target="_blank"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50 transition-colors group">
+                        <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
+                            <i class="fas fa-store text-blue-600 text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-800">General Store</p>
+                            <p class="text-[10px] text-slate-400">store.doa-ailab.com</p>
+                        </div>
+                        <i class="fas fa-external-link-alt text-slate-300 text-xs ml-auto group-hover:text-blue-400 transition-colors"></i>
+                    </a>
+                    <a href="https://store2.doa-ailab.com" target="_blank"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-emerald-50 transition-colors group">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-200 transition-colors">
+                            <i class="fas fa-store-alt text-emerald-600 text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-800">Services Store</p>
+                            <p class="text-[10px] text-slate-400">store2.doa-ailab.com</p>
+                        </div>
+                        <i class="fas fa-external-link-alt text-slate-300 text-xs ml-auto group-hover:text-emerald-400 transition-colors"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <div class="login-card glass-card">
             <div class="text-center mb-4">
                 <img src="./assets/app_logo.svg" alt="App Logo" class="w-[180px] mx-auto mb-6">
@@ -73,6 +115,31 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function toggleStoreMenu() {
+            const dropdown = document.getElementById('storeDropdown');
+            const icon = document.getElementById('burgerIcon');
+            const isOpen = !dropdown.classList.contains('pointer-events-none');
+            if (isOpen) {
+                dropdown.classList.add('scale-95', 'opacity-0', 'pointer-events-none');
+                icon.className = 'fas fa-bars text-base';
+            } else {
+                dropdown.classList.remove('scale-95', 'opacity-0', 'pointer-events-none');
+                icon.className = 'fas fa-times text-base';
+            }
+        }
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('storeNavMenu');
+            const dropdown = document.getElementById('storeDropdown');
+            if (menu && !menu.contains(e.target)) {
+                dropdown.classList.add('scale-95', 'opacity-0', 'pointer-events-none');
+                const icon = document.getElementById('burgerIcon');
+                if (icon) icon.className = 'fas fa-bars text-base';
+            }
+        });
+    </script>
+
 
     <!-- Backup Enforcement Overlay (Blocking) -->
     <div id="backupEnforcementOverlay"
