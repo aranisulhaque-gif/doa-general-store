@@ -1,19 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../core/supabase.js';
 import { currentUserRole } from '../core/state.js';
 import { showMessageModal, showConfirmationModal } from '../utils/helpers.js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// Temporary non-persisted client for adding users without disrupting current manager session
-const tempSupabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false
-    }
-});
 
 export async function fetchUsers() {
     try {
@@ -47,7 +34,8 @@ export async function renderUserManagement() {
         const row = listBody.insertRow();
         row.className = "hover:bg-slate-50/50 transition-colors";
 
-        const isSelf = user.email.toLowerCase() === supabase.auth.user?.()?.email?.toLowerCase();
+        const currentUserEmail = supabase.auth.user?.()?.email;
+        const isSelf = user.email.toLowerCase() === currentUserEmail?.toLowerCase();
         
         let roleOptions = ['Admin', 'Manager', 'Storekeeper', 'Restricted']
             .map(r => `<option value="${r}" ${user.role === r ? 'selected' : ''}>${r}</option>`)
@@ -62,8 +50,8 @@ export async function renderUserManagement() {
             : `<span class="px-2 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-650">${user.role}</span>`;
 
         const deleteBtn = canManage && !isSelf
-            ? `<button onclick="deleteUserConfirmation('${user.email}')" class="compact-button btn-danger px-3 py-1 text-xs font-bold" title="Delete User">
-                <i class="fas fa-trash mr-1"></i> Delete
+            ? `<button onclick="deleteUserConfirmation('${user.email}')" class="compact-button btn-danger px-3 py-1 text-xs font-bold" title="Remove Role">
+                <i class="fas fa-user-minus mr-1"></i> Remove
                </button>`
             : (isSelf ? `<span class="text-xs text-slate-400 font-medium italic">You</span>` : '');
 
@@ -79,10 +67,9 @@ export async function addUser(event) {
     event.preventDefault();
     const form = event.target;
     const email = form.addUserEmail.value.trim().toLowerCase();
-    const password = form.addUserPassword.value;
     const role = form.addUserRole.value;
 
-    if (!email || !password || !role) {
+    if (!email || !role) {
         return showMessageModal("Error", "All fields are required.");
     }
 
@@ -92,33 +79,20 @@ export async function addUser(event) {
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
 
     try {
-        // 1. Create the user credentials via standard signUp on temp client
-        const { data: signUpData, error: signUpError } = await tempSupabase.auth.signUp({
-            email: email,
-            password: password,
-            options: {
-                data: {
-                    auto_confirm: true // hint for auto-confirm systems
-                }
-            }
-        });
-
-        if (signUpError) throw signUpError;
-
-        // 2. Map their role in public.user_roles
-        const { error: roleError } = await supabase
+        // Option 2: Directly assign role mapping. Account must be manually created in Supabase Auth first.
+        const { error } = await supabase
             .from('user_roles')
-            .insert({ email, role });
+            .upsert({ email, role }, { onConflict: 'email' });
 
-        if (roleError) throw roleError;
+        if (error) throw error;
 
-        showMessageModal("Success", `User ${email} created successfully.`);
+        showMessageModal("Success", `Assigned role "${role}" to ${email}.`);
         form.reset();
         window.hideModal('addUserModal');
         await renderUserManagement();
     } catch (err) {
-        console.error("Add user failed:", err);
-        showMessageModal("Error", err.message || "Failed to create user.");
+        console.error("Assign role failed:", err);
+        showMessageModal("Error", err.message || "Failed to assign role.");
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
@@ -144,20 +118,23 @@ export async function updateUserRole(email, newRole) {
 
 export function deleteUserConfirmation(email) {
     showConfirmationModal(
-        "Delete User Account",
-        `Are you sure you want to delete ${email}? This will permanently remove their credentials and database privileges.`,
+        "Remove User Role",
+        `Are you sure you want to remove the role for ${email}? They will immediately be set to Restricted access.`,
         async () => {
             try {
-                // Call secure RPC function
-                const { data, error } = await supabase.rpc('delete_user_by_email', { target_email: email });
+                // Option 2: Simply delete their role row from public.user_roles
+                const { error } = await supabase
+                    .from('user_roles')
+                    .delete()
+                    .eq('email', email);
                 
                 if (error) throw error;
 
-                showMessageModal("Success", `User ${email} has been deleted.`);
+                showMessageModal("Success", `Role removed for ${email}.`);
                 await renderUserManagement();
             } catch (err) {
-                console.error("Deletion failed:", err);
-                showMessageModal("Error", err.message || "Failed to delete user.");
+                console.error("Role removal failed:", err);
+                showMessageModal("Error", err.message || "Failed to remove role.");
             }
         }
     );
