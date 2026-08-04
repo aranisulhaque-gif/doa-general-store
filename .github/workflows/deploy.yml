@@ -41,7 +41,11 @@ jobs:
           cp -r js dist/js 2>/dev/null || true
           cp -r css dist/css 2>/dev/null || true
           cp -r assets dist/assets 2>/dev/null || true
-          echo "store.doa-ailab.com" > dist/CNAME
+          if [ "${{ github.repository }}" = "aranisulhaque-gif/doa-general-store" ]; then
+            echo "store.doa-ailab.com" > dist/CNAME
+          elif [ "${{ github.repository }}" = "aranisulhaque-gif/services-store-app" ]; then
+            echo "store2.doa-ailab.com" > dist/CNAME
+          fi
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
