@@ -45,10 +45,10 @@ export function renderEmployees() {
             <td class="px-4 py-3">${emp.designation}</td>
             <td class="px-4 py-3 table-cell text-xs">N/A</td>
             <td class="px-4 py-3">
-                <button class="compact-button skeuo-btn btn-outline mr-1 edit-emp-btn" data-id="${emp.id}" ${currentUserRole === 'Admin' ? '' : 'style="display:none"'}>
+                <button class="compact-button skeuo-btn btn-outline mr-1 edit-emp-btn" data-id="${emp.id}" ${(currentUserRole === 'Admin' || currentUserRole === 'Manager') ? '' : 'style="display:none"'}>
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="compact-button skeuo-btn btn-danger delete-emp-btn" data-id="${emp.id}" ${currentUserRole === 'Admin' ? '' : 'style="display:none"'}>
+                <button class="compact-button skeuo-btn btn-danger delete-emp-btn" data-id="${emp.id}" ${(currentUserRole === 'Admin' || currentUserRole === 'Manager') ? '' : 'style="display:none"'}>
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -73,7 +73,7 @@ export function renderEmployees() {
 }
 
 export async function addEmployee(event) {
-    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Permission denied.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager' && currentUserRole !== 'Storekeeper') return showMessageModal('Denied', 'Permission denied.');
     event.preventDefault();
     const form = event.target;
     const name = form.employeeName.value.trim();
@@ -97,7 +97,7 @@ export async function addEmployee(event) {
 }
 
 export async function editEmployee(event) {
-    if (currentUserRole !== 'Admin') return showMessageModal('Denied', 'Only Admin can edit.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Only Admin and Manager can edit.');
     event.preventDefault();
     const form = event.target;
     const empId = form.editEmployeeId.value;
@@ -127,7 +127,7 @@ export function deleteEmployeeConfirmation() {
 }
 
 export async function deleteEmployee(empId) {
-    if (currentUserRole !== 'Admin') return showMessageModal('Denied', 'Only Admin can delete employees.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Only Admin and Manager can delete employees.');
     const employee = storeData.employees.find(e => e.id === empId);
     
     const idx = storeData.employees.findIndex(e => e.id === empId);

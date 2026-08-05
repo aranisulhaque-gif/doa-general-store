@@ -77,7 +77,7 @@ export function renderInventory() {
                 <button onclick="viewSupplySlip('${item.id}')" class="compact-button skeuo-btn btn-outline-v8 mr-1">
                     <i class="fas fa-eye text-blue-500"></i>
                 </button>
-                <button class="compact-button skeuo-btn btn-outline-v8 mr-1 edit-item-btn" data-id="${item.id}" ${currentUserRole === 'Admin' ? '' : 'style="display:none"'}>
+                <button class="compact-button skeuo-btn btn-outline-v8 mr-1 edit-item-btn" data-id="${item.id}" ${(currentUserRole === 'Admin' || currentUserRole === 'Manager') ? '' : 'style="display:none"'}>
                     <i class="fas fa-edit text-amber-500"></i>
                 </button>
             </td>
@@ -100,7 +100,7 @@ export function updateBatchDeleteButton() {
     const batchDeleteBtn = document.getElementById('batchDeleteBtn');
     if (!batchDeleteBtn) return;
 
-    if (checkedCount > 0 && currentUserRole === 'Admin') {
+    if (checkedCount > 0 && (currentUserRole === 'Admin' || currentUserRole === 'Manager')) {
         batchDeleteBtn.textContent = `Delete Selected (${checkedCount})`;
         batchDeleteBtn.classList.remove('hidden');
     } else {
@@ -118,7 +118,7 @@ export function changeInventoryPage(delta) {
 }
 
 export async function addItem(event) {
-    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Permission denied.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager' && currentUserRole !== 'Storekeeper') return showMessageModal('Denied', 'Permission denied.');
     event.preventDefault();
     const form = event.target;
     const name = form.itemName.value.trim();
@@ -149,7 +149,7 @@ export async function addItem(event) {
 }
 
 export async function resupplyItem(event) {
-    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Permission denied.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager' && currentUserRole !== 'Storekeeper') return showMessageModal('Denied', 'Permission denied.');
     event.preventDefault();
     const form = event.target;
     const itemId = form.resupplyItemSelect.value;
@@ -188,7 +188,7 @@ export async function resupplyItem(event) {
 }
 
 export async function editItem(event) {
-    if (currentUserRole !== 'Admin') return showMessageModal('Denied', 'Only Admin can edit.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Only Admin and Manager can edit.');
     event.preventDefault();
     const form = event.target;
     const itemId = form.editItemId.value;
@@ -220,7 +220,7 @@ export function deleteItemConfirmation() {
 }
 
 export async function deleteItem(itemId) {
-    if (currentUserRole !== 'Admin') return showMessageModal('Denied', 'Only Admin can delete items.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Only Admin and Manager can delete items.');
     const item = storeData.inventory.find(i => i.id === itemId);
     const updated = storeData.inventory.filter(i => i.id !== itemId);
 
@@ -236,7 +236,7 @@ export async function deleteItem(itemId) {
 }
 
 export function deleteSelectedInventoryItems() {
-    if (currentUserRole !== 'Admin') return showMessageModal('Denied', 'Only Admin can delete items.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Only Admin and Manager can delete items.');
     const checked = document.querySelectorAll('.inventory-checkbox:checked');
     if (checked.length === 0) return showMessageModal("No Selection", "Please select items to delete.");
 

@@ -71,7 +71,7 @@ export function renderDisbursements() {
                 <button onclick="viewTransactionSlip('${t.id}', '${t.type}')" class="compact-button skeuo-btn btn-outline-v8 mr-1">
                     <i class="fas fa-eye text-blue-500"></i>
                 </button>
-                <button onclick="deleteTransaction('${t.id}', '${t.type}')" class="compact-button skeuo-btn btn-danger" ${currentUserRole === 'Admin' ? '' : 'style="display:none"'}>
+                <button onclick="deleteTransaction('${t.id}', '${t.type}')" class="compact-button skeuo-btn btn-danger" ${(currentUserRole === 'Admin' || currentUserRole === 'Manager') ? '' : 'style="display:none"'}>
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -80,7 +80,7 @@ export function renderDisbursements() {
 }
 
 export async function recordDisbursement(event) {
-    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Permission denied.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager' && currentUserRole !== 'Storekeeper') return showMessageModal('Denied', 'Permission denied.');
     event.preventDefault();
     const recipientId = document.getElementById('disbursementRecipient')?.value;
     if (!recipientId) return showMessageModal("Error", "Please select a recipient.");
@@ -128,7 +128,7 @@ export async function recordDisbursement(event) {
 }
 
 export async function recordReturn(event) {
-    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Permission denied.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager' && currentUserRole !== 'Storekeeper') return showMessageModal('Denied', 'Permission denied.');
     event.preventDefault();
     const recipientId = document.getElementById('returnRecipient')?.value;
     if (!recipientId) return showMessageModal("Error", "Please select who is returning.");
@@ -240,7 +240,7 @@ export async function clearDisbursementFilters() {
 }
 
 export async function deleteTransaction(id, type) {
-    if (currentUserRole !== 'Admin') return showMessageModal('Denied', 'Only Admin can delete transactions.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Only Admin and Manager can delete transactions.');
 
     showConfirmationModal("Delete Transaction", "Are you sure? This will permanently delete the transaction AND revert the stock changes automatically.", async () => {
         const isDisbursement = type === 'disbursement';
@@ -289,7 +289,7 @@ export async function deleteTransaction(id, type) {
 }
 
 export async function recordBatchDisbursement(event) {
-    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Permission denied.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager' && currentUserRole !== 'Storekeeper') return showMessageModal('Denied', 'Permission denied.');
     if (event) event.preventDefault();
 
     const recipientSelect = document.getElementById('batchRecipientList');

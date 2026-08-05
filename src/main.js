@@ -450,16 +450,16 @@ supabase.auth.onAuthStateChange(async (event, session) => {
             .eq('email', email)
             .maybeSingle();
 
-        let role = 'Restricted';
+        let role = 'Storekeeper'; // Default: any authenticated user gets at least Storekeeper access
         if (!error && roleData) {
             role = roleData.role;
         }
 
-        setCurrentUserRole(role === 'Restricted' ? null : role);
+        setCurrentUserRole(role);
         const username = email.split('@')[0];
-        document.getElementById('userName').textContent = role === 'Admin' ? 'Admin User' : username;
-        document.getElementById('userRole').textContent = role === 'Admin' ? 'Administrator' : role;
-        document.getElementById('userInitials').textContent = role === 'Admin' ? 'A' : username.substring(0, 2).toUpperCase();
+        document.getElementById('userName').textContent = username;
+        document.getElementById('userRole').textContent = role;
+        document.getElementById('userInitials').textContent = username.substring(0, 2).toUpperCase();
 
         localStorage.setItem('isLoggedIn', 'true');
         document.getElementById('loginPage')?.classList.add('hidden');

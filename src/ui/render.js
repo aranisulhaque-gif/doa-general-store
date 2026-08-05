@@ -34,27 +34,38 @@ export function renderUI() {
         });
 
         if (currentUserRole === 'Admin') {
+            // Admin: everything
             gatedElements.forEach(id => {
                 document.getElementById(id)?.classList.remove('hidden');
             });
         } else if (currentUserRole === 'Manager') {
+            // Manager: everything except prune data (maintenanceSection)
             const managerAllowed = [
-                'exportJsonBtn', 'addEmployeeBtn', 'addItemBtn', 'resupplyBtn',
+                'exportJsonBtn', 'importJsonBtn', 'addEmployeeBtn', 'addItemBtn',
+                'resupplyBtn', 'csvImportBtn', 'batchDeleteBtn',
                 'dashResupplyBtn', 'dashAddItemBtn', 'dashAddEmployeeBtn',
                 'dashNewDisbursementBtn', 'dashBatchDisbursementBtn', 'newDisbursementBtn',
                 'batchDisbursementBtn', 'recordReturnBtn', 'itemReportBtn',
                 'inventoryStoreReportBtn', 'employeeReportBtn', 'disbursementStoreReportBtn',
-                'csvImportBtn', 'navStoreManagement', 'navDataStorage'
+                'navStoreManagement', 'navDataStorage'
             ];
             managerAllowed.forEach(id => {
                 document.getElementById(id)?.classList.remove('hidden');
             });
-
-            // Ensure strictly admin-only features remain hidden
+            // Prune data is Admin-only
             document.getElementById('maintenanceSection')?.classList.add('hidden');
-            document.getElementById('importJsonBtn')?.classList.add('hidden');
-            document.getElementById('batchDeleteBtn')?.classList.add('hidden');
-            document.getElementById('csvImportBtn')?.classList.add('hidden'); // Managers can't bulk import employees unless specified
+        } else if (currentUserRole === 'Storekeeper') {
+            // Storekeeper: add/record/report buttons only — no delete, no data/store management
+            const storekeeperAllowed = [
+                'addItemBtn', 'resupplyBtn', 'addEmployeeBtn',
+                'dashResupplyBtn', 'dashAddItemBtn', 'dashAddEmployeeBtn',
+                'dashNewDisbursementBtn', 'dashBatchDisbursementBtn', 'newDisbursementBtn',
+                'batchDisbursementBtn', 'recordReturnBtn', 'itemReportBtn',
+                'inventoryStoreReportBtn', 'employeeReportBtn', 'disbursementStoreReportBtn'
+            ];
+            storekeeperAllowed.forEach(id => {
+                document.getElementById(id)?.classList.remove('hidden');
+            });
         }
     }
 

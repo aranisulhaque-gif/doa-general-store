@@ -136,29 +136,29 @@ export function showTab(tabId) {
 }
 
 export function showDisbursementForm() {
-    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Permission denied.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager' && currentUserRole !== 'Storekeeper') return showMessageModal('Denied', 'Permission denied.');
     document.getElementById('disbursementModal')?.classList.remove('hidden');
 }
 export function showReturnForm() {
-    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Permission denied.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager' && currentUserRole !== 'Storekeeper') return showMessageModal('Denied', 'Permission denied.');
     document.getElementById('returnModal')?.classList.remove('hidden');
 }
 export function showBatchDisbursementForm() {
-    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Permission denied.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager' && currentUserRole !== 'Storekeeper') return showMessageModal('Denied', 'Permission denied.');
     document.getElementById('batchDisbursementModal')?.classList.remove('hidden');
 }
 export function showSupplyForm() {
-    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Permission denied.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager' && currentUserRole !== 'Storekeeper') return showMessageModal('Denied', 'Permission denied.');
     document.getElementById('addItemCard')?.classList.remove('hidden');
 }
 export function hideSupplyForm() { document.getElementById('addItemCard')?.classList.add('hidden'); }
 export function showResupplyForm() {
-    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Permission denied.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager' && currentUserRole !== 'Storekeeper') return showMessageModal('Denied', 'Permission denied.');
     document.getElementById('resupplyCard')?.classList.remove('hidden');
 }
 export function hideResupplyForm() { document.getElementById('resupplyCard')?.classList.add('hidden'); }
 export function showAddEmployeeForm() {
-    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Permission denied.');
+    if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager' && currentUserRole !== 'Storekeeper') return showMessageModal('Denied', 'Permission denied.');
     document.getElementById('addEmployeeCard')?.classList.remove('hidden');
 }
 export function hideAddEmployeeForm() { document.getElementById('addEmployeeCard')?.classList.add('hidden'); }

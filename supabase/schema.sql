@@ -139,9 +139,10 @@ CREATE INDEX IF NOT EXISTS idx_user_roles_email ON public.user_roles(email);
 -- ============================================================
 INSERT INTO public.user_roles (email, role) VALUES
     ('admin@storemanager.app', 'Admin'),
+    ('admin@doa.com', 'Admin'),
     ('doa.establishment@gmail.com', 'Manager'),
     ('raquib@generalstore.app', 'Manager'),
     ('rubel@generalstore.app', 'Manager'),
     ('bulbul@generalstore.app', 'Storekeeper'),
     ('saddam@generalstore.app', 'Storekeeper')
-ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (email) DO UPDATE SET role = EXCLUDED.role;
