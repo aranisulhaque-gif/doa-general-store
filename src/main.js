@@ -451,21 +451,16 @@ supabase.auth.onAuthStateChange(async (event, session) => {
             .maybeSingle();
 
         let role = 'Storekeeper';
-        // Hardcoded client-side overrides to guarantee Admin access for default accounts
-        if (email === 'admin@doa.com' || email === 'user@doa.com') {
-            role = 'Admin';
-        } else {
-            if (!error && roleData) {
-                role = roleData.role;
-            } else if (!error && !roleData) {
-                // New user — auto-register as Storekeeper
-                await supabase
-                    .from('user_roles')
-                    .upsert({ email, role: 'Storekeeper' }, { onConflict: 'email', ignoreDuplicates: true });
-                role = 'Storekeeper';
-            } else if (error) {
-                console.warn('⚠️ Role lookup failed (RLS may be blocking SELECT):', error.message);
-            }
+        if (!error && roleData) {
+            role = roleData.role;
+        } else if (!error && !roleData) {
+            // New user — auto-register as Storekeeper
+            await supabase
+                .from('user_roles')
+                .upsert({ email, role: 'Storekeeper' }, { onConflict: 'email', ignoreDuplicates: true });
+            role = 'Storekeeper';
+        } else if (error) {
+            console.warn('⚠️ Role lookup failed (RLS may be blocking SELECT):', error.message);
         }
 
         setCurrentUserRole(role);
