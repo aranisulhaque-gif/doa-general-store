@@ -450,9 +450,13 @@ supabase.auth.onAuthStateChange(async (event, session) => {
             .eq('email', email)
             .maybeSingle();
 
-        let role = 'Storekeeper'; // Default: any authenticated user gets at least Storekeeper access
+        let role = 'Storekeeper'; // Default: any authenticated user gets at least Storekeeper
         if (!error && roleData) {
             role = roleData.role;
+        } else if (!error && !roleData) {
+            // New user — auto-register as Storekeeper so they appear in the User Roles tab
+            await supabase.from('user_roles').insert({ email, role: 'Storekeeper' });
+            role = 'Storekeeper';
         }
 
         setCurrentUserRole(role);

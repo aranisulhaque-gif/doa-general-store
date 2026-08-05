@@ -26,7 +26,7 @@ export function renderUI() {
             'dashNewDisbursementBtn', 'dashBatchDisbursementBtn', 'newDisbursementBtn',
             'batchDisbursementBtn', 'recordReturnBtn', 'itemReportBtn',
             'inventoryStoreReportBtn', 'employeeReportBtn', 'disbursementStoreReportBtn',
-            'navDataStorage', 'navStoreManagement'
+            'navDataStorage', 'navStoreManagement', 'navUserRoles'
         ];
 
         gatedElements.forEach(id => {

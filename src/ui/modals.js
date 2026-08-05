@@ -4,6 +4,7 @@ import { showMessageModal, showConfirmationModal, hideModal } from '../utils/hel
 import { updateBatchDeleteButton } from './inventory.js';
 import { renderUI } from './render.js';
 import { renderEventLog } from './eventLog.js';
+import { renderUserManagement } from './userManagement.js';
 
 export function populateEmployeeSelectors() {
     const options = (storeData.employees || []).map(e => `<option value="${e.id}">${e.name} (${e.designation})</option>`).join('');
@@ -129,9 +130,12 @@ export function showTab(tabId) {
     // Trigger render to ensure charts/tables are current for the visible tab
     renderUI();
 
-    // Specific logic for Data & Storage tab
+    // Specific logic for tab-specific renders
     if (tabId === 'data-storage') {
         renderEventLog();
+    }
+    if (tabId === 'user-roles') {
+        renderUserManagement();
     }
 }
 
