@@ -249,8 +249,19 @@
                 </div>
             </nav>
             <div class="p-8">
-                <span class="text-[10px] text-white/40">System Release v2.5.0</span>
+                <span id="sidebarVersionBadge" class="text-[10px] text-white/40 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block"></span>
+                    <span id="sidebarStoreName">General Store</span>
+                </span>
             </div>
+            <script>
+                (function() {
+                    var host = window.location.hostname;
+                    var label = host.indexOf('store2') !== -1 ? 'Services Store' : 'General Store';
+                    var el = document.getElementById('sidebarStoreName');
+                    if (el) el.textContent = label;
+                })();
+            </script>
         </aside>
 
         <!-- Content Area Wrapper (Right Column) -->
@@ -297,103 +308,54 @@
                         <!-- Dynamically populated stat cards -->
                     </div>
 
-                    <!-- Content Panels (v8 Precision) -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 flex-grow">
-                        <!-- Analytics Section -->
-                        <div class="col-span-1 lg:col-span-2 glass-card p-10 flex flex-col">
-                            <div class="flex items-center justify-between mb-8">
-                                <h3 class="font-bold text-xl text-slate-800">Analytics</h3>
-                                <div class="flex p-1 bg-slate-100/50 rounded-xl border border-slate-200">
-                                    <button onclick="switchChart('lowStock')" id="tab-lowStock"
-                                        class="chart-tab active px-5 py-2 bg-white shadow-sm rounded-lg text-xs font-bold border border-slate-100">Low
-                                        Stock</button>
-                                    <button onclick="switchChart('consumption')" id="tab-consumption"
-                                        class="chart-tab px-5 py-2 text-xs font-bold text-slate-400">Consumption</button>
-                                    <button onclick="switchChart('trends')" id="tab-trends"
-                                        class="chart-tab px-5 py-2 text-xs font-bold text-slate-400">Trends</button>
+                    <!-- Quick Actions (Full Width, 3x2 Grid) -->
+                    <div class="glass-card p-8 flex flex-col">
+                        <h3 class="font-bold text-lg text-slate-800 mb-6">Quick Actions</h3>
+                        <div class="grid grid-cols-3 gap-4">
+                            <!-- Row 1 -->
+                            <button onclick="showDisbursementForm()" id="dashNewDisbursementBtn"
+                                class="flex flex-col items-center justify-center gap-3 p-5 bg-emerald-500 text-white rounded-xl shadow-md hover:bg-emerald-600 active:scale-95 transition-all">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-400/60 flex items-center justify-center">
+                                    <i class="fas fa-plus text-lg"></i>
                                 </div>
-                            </div>
-                            <div
-                                class="p-4 w-full flex-grow bg-slate-100/30 rounded-2xl border-2 border-dashed border-slate-200">
-                                <!-- Low Stock Chart -->
-                                <div id="chart-lowStock" class="chart-container active w-full" style="height: 350px;">
-                                    <canvas id="inventoryChart"></canvas>
+                                <span class="text-xs font-bold text-center leading-tight">New Disbursement</span>
+                            </button>
+                            <button onclick="showSupplyForm()" id="dashAddItemBtn"
+                                class="flex flex-col items-center justify-center gap-3 p-5 bg-white/60 border border-slate-100 rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all">
+                                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                    <i class="fas fa-boxes text-lg"></i>
                                 </div>
-
-                                <!-- Consumption Chart -->
-                                <div id="chart-consumption" class="chart-container w-full"
-                                    style="display: none; height: 350px;">
-                                    <canvas id="consumptionChart"></canvas>
+                                <span class="text-xs font-bold text-slate-700 text-center leading-tight">Add New Item</span>
+                            </button>
+                            <button onclick="showAddEmployeeForm()" id="dashAddEmployeeBtn"
+                                class="flex flex-col items-center justify-center gap-3 p-5 bg-white/60 border border-slate-100 rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all">
+                                <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
+                                    <i class="fas fa-user-plus text-lg"></i>
                                 </div>
-
-                                <!-- Trends Chart -->
-                                <div id="chart-trends" class="chart-container w-full"
-                                    style="display: none; height: 350px;">
-                                    <canvas id="trendsChart"></canvas>
+                                <span class="text-xs font-bold text-slate-700 text-center leading-tight">Add Employee</span>
+                            </button>
+                            <!-- Row 2 -->
+                            <button onclick="showResupplyForm()" id="dashResupplyBtn"
+                                class="flex flex-col items-center justify-center gap-3 p-5 bg-white/60 border border-slate-100 rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all">
+                                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                    <i class="fas fa-truck-loading text-lg"></i>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Quick Actions -->
-                        <div class="glass-card p-8 flex flex-col">
-                            <h3 class="font-bold text-lg text-slate-800 mb-8">Quick Actions</h3>
-                            <div class="space-y-4">
-                                <button onclick="showDisbursementForm()" id="dashNewDisbursementBtn"
-                                    class="w-full text-left p-4 bg-emerald-500 text-white rounded-xl flex items-center justify-between shadow-md hover:bg-emerald-600 transition-colors">
-                                    <div class="flex items-center gap-3">
-                                        <div
-                                            class="w-8 h-8 rounded-lg bg-emerald-400 text-white flex items-center justify-center">
-                                            <i class="fas fa-plus"></i>
-                                        </div>
-                                        <span class="text-sm font-bold shadow-sm text-white">New Disbursement</span>
-                                    </div>
-                                    <i class="fas fa-chevron-right text-emerald-200 text-xs"></i>
-                                </button>
-                                <button onclick="showSupplyForm()" id="dashAddItemBtn"
-                                    class="w-full text-left p-4 bg-white/60 border border-slate-100 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-                                    <div class="flex items-center gap-3">
-                                        <div
-                                            class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                                            <i class="fas fa-boxes"></i>
-                                        </div>
-                                        <span class="text-sm font-bold text-slate-700">Add New Item</span>
-                                    </div>
-                                    <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
-                                </button>
-                                <button onclick="showAddEmployeeForm()" id="dashAddEmployeeBtn"
-                                    class="w-full text-left p-4 bg-white/60 border border-slate-100 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-                                    <div class="flex items-center gap-3">
-                                        <div
-                                            class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
-                                            <i class="fas fa-user-plus"></i>
-                                        </div>
-                                        <span class="text-sm font-bold text-slate-700">Add a New Employee</span>
-                                    </div>
-                                    <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
-                                </button>
-                                <button onclick="showResupplyForm()" id="dashResupplyBtn"
-                                    class="w-full text-left p-4 bg-white/60 border border-slate-100 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-                                    <div class="flex items-center gap-3">
-                                        <div
-                                            class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                                            <i class="fas fa-truck-loading"></i>
-                                        </div>
-                                        <span class="text-sm font-bold text-slate-700">New Resupply</span>
-                                    </div>
-                                    <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
-                                </button>
-                                <button onclick="showBatchDisbursementForm()" id="dashBatchDisbursementBtn"
-                                    class="w-full text-left p-4 bg-white/60 border border-slate-100 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-                                    <div class="flex items-center gap-3">
-                                        <div
-                                            class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-                                            <i class="fas fa-users-cog"></i>
-                                        </div>
-                                        <span class="text-sm font-bold text-slate-700">Batch Disburse</span>
-                                    </div>
-                                    <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
-                                </button>
-                            </div>
+                                <span class="text-xs font-bold text-slate-700 text-center leading-tight">New Resupply</span>
+                            </button>
+                            <button onclick="showBatchDisbursementForm()" id="dashBatchDisbursementBtn"
+                                class="flex flex-col items-center justify-center gap-3 p-5 bg-white/60 border border-slate-100 rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all">
+                                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                                    <i class="fas fa-users-cog text-lg"></i>
+                                </div>
+                                <span class="text-xs font-bold text-slate-700 text-center leading-tight">Batch Disburse</span>
+                            </button>
+                            <button onclick="generateCurrentStockReport()" id="dashCurrentStockBtn"
+                                class="flex flex-col items-center justify-center gap-3 p-5 bg-white/60 border border-slate-100 rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all">
+                                <div class="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+                                    <i class="fas fa-clipboard-check text-lg"></i>
+                                </div>
+                                <span class="text-xs font-bold text-slate-700 text-center leading-tight">Current Stock</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1002,7 +964,7 @@
 
             <!-- Footer -->
             <footer class="footer no-print">
-                DOA Store Manager | Hybrid Storage Back-up Version 2.5 | Designed by <a
+                DOA Store Manager | Real-time Superbase Version 3.0 | Designed by <a
                     href="https://facebook.com/smani.bubt" target="_blank" class="text-blue-500 hover:underline">S M
                     Anisul Haque</a>
             </footer>
