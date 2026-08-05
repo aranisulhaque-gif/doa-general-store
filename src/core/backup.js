@@ -182,7 +182,16 @@ export async function importOldJsonBackup(event) {
                     return cleanObj;
                 });
 
-                for (const batch of chunk(tagged, 500)) {
+                // Deduplicate rows by primary key 'id' to prevent PostgreSQL "ON CONFLICT DO UPDATE command cannot affect row a second time" error
+                const uniqueMap = new Map();
+                tagged.forEach(item => {
+                    if (item.id) {
+                        uniqueMap.set(item.id, item);
+                    }
+                });
+                const deduplicated = Array.from(uniqueMap.values());
+
+                for (const batch of chunk(deduplicated, 500)) {
                     const { error } = await supabase.from(table).upsert(batch);
                     if (error) throw new Error(`Insert into ${table} failed: ${error.message}`);
                 }
