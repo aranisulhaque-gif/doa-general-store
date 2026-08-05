@@ -453,14 +453,8 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         let role = 'Storekeeper';
         if (!error && roleData) {
             role = roleData.role;
-        } else if (!error && !roleData) {
-            // New user — auto-register as Storekeeper
-            await supabase
-                .from('user_roles')
-                .upsert({ email, role: 'Storekeeper' }, { onConflict: 'email', ignoreDuplicates: true });
-            role = 'Storekeeper';
         } else if (error) {
-            console.warn('⚠️ Role lookup failed (RLS may be blocking SELECT):', error.message);
+            console.warn('⚠️ Role lookup failed:', error.message);
         }
 
         setCurrentUserRole(role);

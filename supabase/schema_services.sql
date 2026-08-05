@@ -130,10 +130,7 @@ VALUES
 -- 2. Map their roles in the public schema
 INSERT INTO public.user_roles (email, role)
 VALUES
-  ('user@doa.com', 'Admin'),
-  ('doaservices.store@gmail.com', 'Manager'),
-  ('yusuf@servicesstore.app', 'Manager'),
-  ('sskabir@servicesstore.app', 'Manager'),
-  ('mithu@servicesstore.app', 'Storekeeper'),
-  ('storekeeper@servicesstore.app', 'Storekeeper')
+  ('admin.services@doa-ailab.com', 'Admin'),
+  ('manager.services@doa-ailab.com', 'Manager'),
+  ('storekeeper.services@doa-ailab.com', 'Storekeeper')
 ON CONFLICT (email) DO UPDATE SET role = EXCLUDED.role;
