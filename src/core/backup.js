@@ -69,10 +69,24 @@ function buildImportStoreModal(storeMap, onConfirm) {
           </h3>
           <p class="text-sm text-slate-500 mt-1">
             Choose which stores and specific collections to import.
-            <br><span class="text-red-500 font-semibold">⚠ Existing data for selected collections in these stores will be wiped.</span>
           </p>
         </div>
         <div class="p-4 max-h-80 overflow-y-auto space-y-3">${rows}</div>
+        
+        <div class="p-4 border-t border-slate-100 bg-slate-50">
+          <span class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Import Mode</span>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+              <input type="radio" name="importMode" value="update" checked class="accent-amber-600 w-4 h-4">
+              Update (Merge)
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+              <input type="radio" name="importMode" value="replace" class="accent-amber-600 w-4 h-4">
+              Replace (Wipe & Reload)
+            </label>
+          </div>
+        </div>
+
         <div class="p-4 border-t border-slate-100 flex items-center justify-between gap-3">
           <label class="flex items-center gap-2 text-xs text-slate-500 cursor-pointer select-none">
             <input id="importSelectAllChk" type="checkbox" checked class="accent-amber-600 w-4 h-4">
@@ -117,6 +131,7 @@ function buildImportStoreModal(storeMap, onConfirm) {
     document.getElementById('importConfirmBtn').addEventListener('click', () => {
         const result = {};
         const selectedStores = [...modal.querySelectorAll('[name="importStoreCheck"]:checked')].map(cb => cb.value);
+        const mode = modal.querySelector('[name="importMode"]:checked').value;
         
         selectedStores.forEach(sid => {
             const cols = [...modal.querySelectorAll(`[name="import_col_${sid}"]:checked`)].map(cb => cb.value);
@@ -131,7 +146,7 @@ function buildImportStoreModal(storeMap, onConfirm) {
         }
 
         modal.remove();
-        onConfirm(result);
+        onConfirm({ selectedStoreColsMap: result, mode });
     });
 }
 
@@ -372,7 +387,7 @@ export async function handleBackupImport(event) {
             });
 
     const runImportPipeline = (storeMap) => {
-        buildImportStoreModal(storeMap, async (selectedStoreColsMap) => {
+        buildImportStoreModal(storeMap, async ({ selectedStoreColsMap, mode }) => {
             const overlay = document.createElement('div');
             overlay.id = 'importProgressOverlay';
             overlay.className = 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm text-white text-center';
@@ -388,8 +403,10 @@ export async function handleBackupImport(event) {
                     for (const table of tables) {
                         const rows = storeMap[sid][table];
                         if (rows && rows.length > 0) {
-                            const { error: clearErr } = await supabase.from(table).delete().eq('store_id', sid);
-                            if (clearErr) throw new Error(`Clear ${table}/${sid} failed: ${clearErr.message}`);
+                            if (mode === 'replace') {
+                                const { error: clearErr } = await supabase.from(table).delete().eq('store_id', sid);
+                                if (clearErr) throw new Error(`Clear ${table}/${sid} failed: ${clearErr.message}`);
+                            }
                             await insertAll(table, rows, sid, storeMap[sid]['inventory']);
                         }
                     }
