@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import fs from 'fs';
 
-const child = spawn('firebase', ['login', '--no-localhost'], { shell: true });
+const child = spawn('npx.cmd', ['firebase-tools', 'login', '--no-localhost'], { shell: true });
 
 let output = '';
 let urlFound = false;
