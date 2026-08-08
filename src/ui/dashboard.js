@@ -47,37 +47,41 @@ export function renderDashboard() {
         if (statsGrid && isVisible) {
             statsGrid.innerHTML = `
                 <!-- Total Items -->
-                <div class="glass-card stat-card">
+                <button class="glass-card stat-card stat-card-btn" onclick="window.showTab('inventory')" title="Go to Inventory">
                     <div class="stat-icon bg-blue-50 text-blue-600"><i class="fas fa-boxes"></i></div>
                     <div>
                         <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Items</p>
                         <p class="text-2xl font-bold">${totalItems.toLocaleString()}</p>
                     </div>
-                </div>
-                <!-- Total Stock Units -->
-                <div class="glass-card stat-card">
-                    <div class="stat-icon bg-indigo-50 text-indigo-600"><i class="fas fa-cubes"></i></div>
+                    <i class="fas fa-arrow-right stat-card-arrow text-blue-400"></i>
+                </button>
+                <!-- Total Employees -->
+                <button class="glass-card stat-card stat-card-btn" onclick="window.showTab('employees')" title="Go to Employees">
+                    <div class="stat-icon bg-indigo-50 text-indigo-600"><i class="fas fa-users"></i></div>
                     <div>
-                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Stock Units</p>
-                        <p class="text-2xl font-bold">${totalStock.toLocaleString()}</p>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Employees</p>
+                        <p class="text-2xl font-bold">${totalEmployees.toLocaleString()}</p>
                     </div>
-                </div>
-                <!-- Total Transactions -->
-                <div class="glass-card stat-card">
+                    <i class="fas fa-arrow-right stat-card-arrow text-indigo-400"></i>
+                </button>
+                <!-- Transactions -->
+                <button class="glass-card stat-card stat-card-btn" onclick="window.showTab('disbursements')" title="Go to Disbursements">
                     <div class="stat-icon bg-emerald-50 text-emerald-600"><i class="fas fa-exchange-alt"></i></div>
                     <div>
                         <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Transactions</p>
                         <p class="text-2xl font-bold">${(totalDisbursements + totalReturns).toLocaleString()}</p>
                     </div>
-                </div>
+                    <i class="fas fa-arrow-right stat-card-arrow text-emerald-400"></i>
+                </button>
                 <!-- Low Stock/OOS -->
-                <div class="glass-card stat-card">
+                <button class="glass-card stat-card stat-card-btn" onclick="(function(){ var f=document.getElementById('inventoryStockFilter'); if(f) f.value='low'; window.showTab('inventory'); })()" title="Go to Low Stock Inventory">
                     <div class="stat-icon bg-orange-50 text-orange-600"><i class="fas fa-exclamation-triangle"></i></div>
                     <div>
                         <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Low Stock/OOS</p>
                         <p class="text-2xl font-bold text-orange-600">${(lowStockCount + outOfStockCount).toLocaleString()}</p>
                     </div>
-                </div>
+                    <i class="fas fa-arrow-right stat-card-arrow text-orange-400"></i>
+                </button>
             `;
         }
     }

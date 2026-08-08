@@ -275,6 +275,42 @@ body.offline .offline-indicator {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
+.stat-card-btn {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    text-align: left;
+    border: none;
+    font: inherit;
+    color: inherit;
+    outline: none;
+}
+
+.stat-card-btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.stat-card-btn:active {
+    transform: scale(0.98);
+}
+
+.stat-card-arrow {
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.stat-card-btn:hover .stat-card-arrow {
+    opacity: 1;
+    transform: translateX(0);
+}
+
 .btn-primary {
     background-color: var(--primary-color);
     color: white;
