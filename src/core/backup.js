@@ -13,20 +13,49 @@ function buildImportStoreModal(storeMap, onConfirm) {
         const inv = (s.inventory || []).length;
         const emp = (s.employees || []).length;
         const dis = (s.disbursements || []).length;
+        const ret = (s.returns || []).length;
+        const res = (s.resupplies || []).length;
+
+        // Render the store row with individual checkboxes under it
         return `
-        <label class="flex items-start gap-3 p-3 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
-          <input type="checkbox" name="importStoreCheck" value="${id}"
-            class="mt-0.5 w-4 h-4 accent-amber-600 flex-shrink-0" checked>
-          <div class="flex-1 min-w-0">
-            <div class="font-semibold text-slate-800 text-sm">${s.name || id}</div>
-            <div class="text-xs text-slate-500 mt-0.5">${s.location ? s.location + ' · ' : ''}<span class="font-mono text-slate-400">${id}</span></div>
-            <div class="flex gap-3 mt-1 text-xs text-slate-500">
-              <span><i class="fas fa-boxes mr-1 text-blue-400"></i>${inv} items</span>
-              <span><i class="fas fa-users mr-1 text-purple-400"></i>${emp} employees</span>
-              <span><i class="fas fa-exchange-alt mr-1 text-green-400"></i>${dis} disbursements</span>
+        <div class="p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors space-y-2">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" name="importStoreCheck" value="${id}" id="store_${id}"
+              class="w-4 h-4 accent-amber-600 flex-shrink-0" checked>
+            <div class="flex-1 min-w-0">
+              <label for="store_${id}" class="font-semibold text-slate-800 text-sm cursor-pointer">${s.name || id}</label>
+              <div class="text-xs text-slate-500 mt-0.5">${s.location ? s.location + ' · ' : ''}<span class="font-mono text-slate-400">${id}</span></div>
             </div>
           </div>
-        </label>`;
+          
+          <div class="pl-7 grid grid-cols-2 gap-2 text-xs text-slate-600">
+            ${inv > 0 ? `
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="import_col_${id}" value="inventory" class="accent-amber-600" checked>
+              <span>Inventory (${inv})</span>
+            </label>` : ''}
+            ${emp > 0 ? `
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="import_col_${id}" value="employees" class="accent-amber-600" checked>
+              <span>Employees (${emp})</span>
+            </label>` : ''}
+            ${dis > 0 ? `
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="import_col_${id}" value="disbursements" class="accent-amber-600" checked>
+              <span>Disbursements (${dis})</span>
+            </label>` : ''}
+            ${ret > 0 ? `
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="import_col_${id}" value="returns" class="accent-amber-600" checked>
+              <span>Returns (${ret})</span>
+            </label>` : ''}
+            ${res > 0 ? `
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="import_col_${id}" value="resupplies" class="accent-amber-600" checked>
+              <span>Resupplies (${res})</span>
+            </label>` : ''}
+          </div>
+        </div>`;
     }).join('');
 
     const modal = document.createElement('div');
@@ -36,14 +65,14 @@ function buildImportStoreModal(storeMap, onConfirm) {
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
         <div class="p-6 border-b border-slate-100">
           <h3 class="text-xl font-bold text-slate-800">
-            <i class="fas fa-file-import mr-2 text-amber-500"></i>Select Stores to Import
+            <i class="fas fa-file-import mr-2 text-amber-500"></i>Select Stores and Collections
           </h3>
           <p class="text-sm text-slate-500 mt-1">
-            ${storeIds.length} store(s) found in backup. Check the ones you want to import.
-            <br><span class="text-red-500 font-semibold">⚠ Existing data in selected stores will be wiped.</span>
+            Choose which stores and specific collections to import.
+            <br><span class="text-red-500 font-semibold">⚠ Existing data for selected collections in these stores will be wiped.</span>
           </p>
         </div>
-        <div class="p-4 max-h-80 overflow-y-auto space-y-2">${rows}</div>
+        <div class="p-4 max-h-80 overflow-y-auto space-y-3">${rows}</div>
         <div class="p-4 border-t border-slate-100 flex items-center justify-between gap-3">
           <label class="flex items-center gap-2 text-xs text-slate-500 cursor-pointer select-none">
             <input id="importSelectAllChk" type="checkbox" checked class="accent-amber-600 w-4 h-4">
@@ -56,7 +85,7 @@ function buildImportStoreModal(storeMap, onConfirm) {
             </button>
             <button id="importConfirmBtn"
               class="px-5 py-2 rounded-lg bg-amber-600 text-white text-sm font-bold hover:bg-amber-700 transition-colors shadow">
-              <i class="fas fa-file-import mr-1"></i>Import Selected
+              <i class="fas fa-file-import mr-1"></i>Start Import
             </button>
           </div>
         </div>
@@ -64,18 +93,45 @@ function buildImportStoreModal(storeMap, onConfirm) {
 
     document.body.appendChild(modal);
 
+    // Disable/Enable sub-checkboxes when store checkbox toggled
+    storeIds.forEach(id => {
+        const storeCb = modal.querySelector(`#store_${id}`);
+        storeCb.addEventListener('change', (e) => {
+            modal.querySelectorAll(`[name="import_col_${id}"]`).forEach(cb => {
+                cb.disabled = !e.target.checked;
+                cb.checked = e.target.checked;
+            });
+        });
+    });
+
     // Select/Deselect all
     document.getElementById('importSelectAllChk').addEventListener('change', (e) => {
-        modal.querySelectorAll('[name="importStoreCheck"]').forEach(cb => cb.checked = e.target.checked);
+        modal.querySelectorAll('[name="importStoreCheck"]').forEach(cb => {
+            cb.checked = e.target.checked;
+            cb.dispatchEvent(new Event('change'));
+        });
     });
 
     document.getElementById('importCancelBtn').addEventListener('click', () => modal.remove());
 
     document.getElementById('importConfirmBtn').addEventListener('click', () => {
-        const selected = [...modal.querySelectorAll('[name="importStoreCheck"]:checked')].map(cb => cb.value);
-        if (selected.length === 0) { alert('Please select at least one store.'); return; }
+        const result = {};
+        const selectedStores = [...modal.querySelectorAll('[name="importStoreCheck"]:checked')].map(cb => cb.value);
+        
+        selectedStores.forEach(sid => {
+            const cols = [...modal.querySelectorAll(`[name="import_col_${sid}"]:checked`)].map(cb => cb.value);
+            if (cols.length > 0) {
+                result[sid] = cols;
+            }
+        });
+
+        if (Object.keys(result).length === 0) {
+            alert('Please select at least one store and one collection to import.');
+            return;
+        }
+
         modal.remove();
-        onConfirm(selected);
+        onConfirm(result);
     });
 }
 
@@ -173,24 +229,29 @@ export async function handleBackupImport(event) {
                 if (obj.itemId) obj.itemId = `${storeId}_${String(obj.itemId)}`;
             }
 
-            // ── Fix 4: disbursements/returns — prefix itemId inside items array,
+            // ── Fix 4: disbursements/returns — translate itemId/itemName to id/name inside items array,
             //    and derive recipientName from items if missing ──
             if (table === 'disbursements' || table === 'returns') {
-                if (!obj.items || !Array.isArray(obj.items)) {
-                    if (typeof r.items === 'string') {
-                        try { obj.items = JSON.parse(r.items); }
-                        catch (e) { obj.items = []; }
-                    } else {
-                        obj.items = Array.isArray(r.items) ? r.items : [];
-                    }
+                let parsedItems = [];
+                if (typeof r.items === 'string') {
+                    try { parsedItems = JSON.parse(r.items); }
+                    catch (e) { parsedItems = []; }
+                } else if (Array.isArray(r.items)) {
+                    parsedItems = r.items;
+                } else if (Array.isArray(obj.items)) {
+                    parsedItems = obj.items;
                 }
-                // Prefix itemId inside the items array for consistency
-                if (Array.isArray(obj.items)) {
-                    obj.items = obj.items.map(item => ({
-                        ...item,
-                        itemId: item.itemId ? `${storeId}_${String(item.itemId)}` : item.itemId
-                    }));
-                }
+
+                // Map keys: in the app, items must have { id, name, quantity }
+                obj.items = parsedItems.map(item => {
+                    const rawId = item.id || item.itemId || '';
+                    return {
+                        id: rawId ? `${storeId}_${String(rawId)}` : '',
+                        name: item.name || item.itemName || 'Unknown',
+                        quantity: parseInt(item.quantity, 10) || 0
+                    };
+                });
+
                 // recipientName missing from Excel — set a placeholder from recipientId
                 // so the app can display something meaningful instead of blank
                 if (!obj.recipientName || String(obj.recipientName).trim() === '') {
@@ -310,36 +371,31 @@ export async function handleBackupImport(event) {
                 modal.querySelectorAll('[name="importCollectionCheck"]').forEach(cb => cb.checked = e.target.checked);
             });
 
-            document.getElementById('importSettingsCancelBtn').addEventListener('click', () => modal.remove());
-
-            document.getElementById('importSettingsConfirmBtn').addEventListener('click', () => {
-                const selectedCols = [...modal.querySelectorAll('[name="importCollectionCheck"]:checked')].map(cb => cb.value);
-                const mode = modal.querySelector('[name="importMode"]:checked').value;
-                if (selectedCols.length === 0) { alert('Please select at least one collection.'); return; }
-                modal.remove();
-                onConfirm({ selectedCols, mode });
-            });
-        };
-
-        showImportSettingsModal(availableCollections, async ({ selectedCols, mode }) => {
+    const runImportPipeline = (storeMap) => {
+        buildImportStoreModal(storeMap, async (selectedStoreColsMap) => {
             const overlay = document.createElement('div');
             overlay.id = 'importProgressOverlay';
             overlay.className = 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm text-white text-center';
             overlay.innerHTML = `<div class="text-5xl mb-4"><i class="fas fa-spinner fa-spin"></i></div>
               <div class="text-xl font-bold" id="importProgressMsg">Importing data…</div>`;
             document.body.appendChild(overlay);
-
             try {
-                for (const table of selectedCols) {
-                    if (mode === 'replace') {
-                        const { error: clearErr } = await supabase.from(table).delete().eq('store_id', currentStoreId);
-                        if (clearErr) throw new Error(`Clear ${table} failed: ${clearErr.message}`);
+                const sids = Object.keys(selectedStoreColsMap);
+                for (const sid of sids) {
+                    const msg = document.getElementById('importProgressMsg');
+                    if (msg) msg.textContent = `Importing store ${storeMap[sid]?.name || sid}…`;
+                    const tables = selectedStoreColsMap[sid];
+                    for (const table of tables) {
+                        const rows = storeMap[sid][table];
+                        if (rows && rows.length > 0) {
+                            const { error: clearErr } = await supabase.from(table).delete().eq('store_id', sid);
+                            if (clearErr) throw new Error(`Clear ${table}/${sid} failed: ${clearErr.message}`);
+                            await insertAll(table, rows, sid, storeMap[sid]['inventory']);
+                        }
                     }
-                    await insertAll(table, backupData[table], currentStoreId, backupData['inventory']);
                 }
-
                 overlay.remove();
-                alert(`✅ Import complete! Selected collections imported successfully.\nThe page will now reload.`);
+                alert(`✅ Import complete!\nThe page will now reload.`);
                 window.location.reload();
             } catch (err) {
                 overlay.remove();
@@ -364,16 +420,11 @@ export async function handleBackupImport(event) {
                     resupplies: 'resupplies'
                 };
 
-                // Helper: parse a sheet, auto-detecting blank leading rows
                 const parseSheet = (sheetName) => {
                     const ws = workbook.Sheets[sheetName];
-                    // Try default parse first
                     let rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-                    // If first row has no recognisable columns (e.g. __EMPTY), scan raw rows
-                    // to find the actual header row and re-parse from there
                     if (rows.length > 0 && Object.keys(rows[0]).every(k => k.startsWith('__EMPTY'))) {
                         const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-                        // Find first row that looks like a real header (contains 'id' or 'storeId')
                         const headerIdx = raw.findIndex(r =>
                             r.some(cell => typeof cell === 'string' && ['id','storeId','store_id'].includes(cell.trim()))
                         );
@@ -391,10 +442,8 @@ export async function handleBackupImport(event) {
                     return rows;
                 };
 
-                // Collect all rows per collection, grouped by storeId
-                // Structure: storeMap[storeId][collection] = rows[]
                 const storeMap = {};
-                const flatBackup = {};  // fallback for single-store files
+                const flatBackup = {};
 
                 workbook.SheetNames.forEach(sheetName => {
                     const lowerName = sheetName.toLowerCase().trim();
@@ -404,7 +453,6 @@ export async function handleBackupImport(event) {
                     const rows = parseSheet(sheetName);
                     flatBackup[standardName] = rows;
 
-                    // Check if rows contain a storeId column (multi-store export)
                     if (rows.length > 0 && (rows[0].storeId !== undefined || rows[0].store_id !== undefined)) {
                         rows.forEach(row => {
                             const sid = String(row.storeId ?? row.store_id ?? '').trim();
@@ -416,7 +464,6 @@ export async function handleBackupImport(event) {
                     }
                 });
 
-                // Also pull store names from STORES sheet if present
                 if (workbook.SheetNames.some(s => s.toLowerCase() === 'stores')) {
                     const storesWs = workbook.Sheets[workbook.SheetNames.find(s => s.toLowerCase() === 'stores')];
                     const storeRows = XLSX.utils.sheet_to_json(storesWs, { defval: '' });
@@ -430,43 +477,11 @@ export async function handleBackupImport(event) {
                 }
 
                 const isMultiStore = Object.keys(storeMap).length > 1;
-
                 if (isMultiStore) {
-                    // Show store-selection modal, then import selected stores in sequence
-                    buildImportStoreModal(storeMap, async (selectedStoreIds) => {
-                        const overlay = document.createElement('div');
-                        overlay.id = 'importProgressOverlay';
-                        overlay.className = 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm text-white text-center';
-                        overlay.innerHTML = `<div class="text-5xl mb-4"><i class="fas fa-spinner fa-spin"></i></div>
-                          <div class="text-xl font-bold" id="importProgressMsg">Importing data…</div>`;
-                        document.body.appendChild(overlay);
-                        try {
-                            for (const sid of selectedStoreIds) {
-                                const msg = document.getElementById('importProgressMsg');
-                                if (msg) msg.textContent = `Importing store ${storeMap[sid]?.name || sid}…`;
-                                const tables = ['inventory', 'employees', 'disbursements', 'returns', 'resupplies'];
-                                for (const table of tables) {
-                                    const rows = storeMap[sid][table];
-                                    if (rows && rows.length > 0) {
-                                        // Wipe existing data for this store+table then re-insert
-                                        const { error: clearErr } = await supabase.from(table).delete().eq('store_id', sid);
-                                        if (clearErr) throw new Error(`Clear ${table}/${sid} failed: ${clearErr.message}`);
-                                        await insertAll(table, rows, sid, storeMap[sid]['inventory']);
-                                    }
-                                }
-                            }
-                            overlay.remove();
-                            alert(`✅ Import complete! ${selectedStoreIds.length} store(s) imported.\nThe page will now reload.`);
-                            window.location.reload();
-                        } catch (err) {
-                            overlay.remove();
-                            console.error('Import failed:', err);
-                            alert(`❌ Import failed: ${err.message}`);
-                        }
-                    });
+                    runImportPipeline(storeMap);
                 } else {
-                    // Single-store file — fall through to the settings modal
-                    await processBackupData(flatBackup);
+                    const finalMap = { [currentStoreId]: flatBackup };
+                    runImportPipeline(finalMap);
                 }
             } catch (err) {
                 alert(`Failed to parse Excel file: ${err.message}`);
@@ -474,28 +489,21 @@ export async function handleBackupImport(event) {
         };
         reader.readAsArrayBuffer(file);
     } else {
-        // Fallback to JSON
         const reader = new FileReader();
         reader.onload = async (e) => {
             let parsed;
             try { parsed = JSON.parse(e.target.result); }
             catch { alert('Invalid file format. Please select a valid JSON or Excel backup.'); return; }
 
-            let backupData = parsed;
             const isMultiStore = typeof parsed === 'object' && !Array.isArray(parsed)
                 && !Array.isArray(parsed.inventory)
                 && Object.values(parsed).every(v => typeof v === 'object' && !Array.isArray(v) && ('inventory' in v || 'employees' in v));
 
             if (isMultiStore) {
-                if (parsed[currentStoreId]) {
-                    backupData = parsed[currentStoreId];
-                } else {
-                    const firstStoreId = Object.keys(parsed)[0];
-                    backupData = parsed[firstStoreId];
-                }
+                runImportPipeline(parsed);
+            } else {
+                runImportPipeline({ [currentStoreId]: parsed });
             }
-
-            await processBackupData(backupData);
         };
         reader.readAsText(file);
     }
