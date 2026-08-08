@@ -107,16 +107,32 @@ export async function handleBackupImport(event) {
         return out;
     };
 
-    const insertAll = async (table, rows, storeId) => {
+    // Build an inventory name-lookup map from the current import batch (for resupplies)
+    const buildInventoryNameMap = (inventoryRows) => {
+        const map = {};
+        if (!Array.isArray(inventoryRows)) return map;
+        inventoryRows.forEach(r => { if (r.id) map[String(r.id)] = r.name || ''; });
+        return map;
+    };
+
+    const insertAll = async (table, rows, storeId, inventoryRows = []) => {
         if (!rows || rows.length === 0) return;
         const allowedKeys = schemas[table] || [];
+        const invNameMap = table === 'resupplies' ? buildInventoryNameMap(inventoryRows) : {};
 
         const tagged = rows.map(r => {
             // Normalise storeId → store_id (Excel exports use camelCase)
             const obj = { ...r, store_id: storeId };
             if (obj.storeId !== undefined) delete obj.storeId;
+
+            // ── Fix 1: Prefix id with storeId to prevent cross-store PK collisions ──
+            // e.g. id "abc123" in Store 1 becomes "1_abc123" so it won't overwrite
+            // the same id from Store 3 in the shared Supabase table.
+            if (obj.id) obj.id = `${storeId}_${String(obj.id)}`;
+
+            // ── Fix 2: Map 'date' → 'timestamp' (Excel resupplies/disbursements use 'date') ──
             if (obj.date && !obj.timestamp) obj.timestamp = obj.date;
-            
+
             const dateFields = ['timestamp', 'lastResupplyDate'];
             dateFields.forEach(field => {
                 if (obj[field] !== undefined && obj[field] !== null && obj[field] !== '') {
@@ -146,16 +162,42 @@ export async function handleBackupImport(event) {
             if (obj.quantity !== undefined) obj.quantity = parseInt(obj.quantity, 10) || 0;
             if (obj.totalItems !== undefined) obj.totalItems = parseInt(obj.totalItems, 10) || 0;
 
-            if ((table === 'disbursements' || table === 'returns') && (!obj.items || !Array.isArray(obj.items))) {
-                if (typeof r.items === 'string') {
-                    try {
-                        obj.items = JSON.parse(r.items);
-                    } catch (e) {
-                        obj.items = [];
-                    }
-                } else {
-                    obj.items = Array.isArray(r.items) ? r.items : [];
+            // ── Fix 3: Resolve itemName for resupplies (Excel has no itemName column) ──
+            // Look up the item name from the inventory rows included in this import batch.
+            if (table === 'resupplies') {
+                if (!obj.itemName || String(obj.itemName).trim() === '') {
+                    const rawItemId = r.itemId || '';
+                    obj.itemName = invNameMap[String(rawItemId)] || invNameMap[`${storeId}_${rawItemId}`] || obj.note || '';
                 }
+                // Also prefix itemId the same way we prefixed id
+                if (obj.itemId) obj.itemId = `${storeId}_${String(obj.itemId)}`;
+            }
+
+            // ── Fix 4: disbursements/returns — prefix itemId inside items array,
+            //    and derive recipientName from items if missing ──
+            if (table === 'disbursements' || table === 'returns') {
+                if (!obj.items || !Array.isArray(obj.items)) {
+                    if (typeof r.items === 'string') {
+                        try { obj.items = JSON.parse(r.items); }
+                        catch (e) { obj.items = []; }
+                    } else {
+                        obj.items = Array.isArray(r.items) ? r.items : [];
+                    }
+                }
+                // Prefix itemId inside the items array for consistency
+                if (Array.isArray(obj.items)) {
+                    obj.items = obj.items.map(item => ({
+                        ...item,
+                        itemId: item.itemId ? `${storeId}_${String(item.itemId)}` : item.itemId
+                    }));
+                }
+                // recipientName missing from Excel — set a placeholder from recipientId
+                // so the app can display something meaningful instead of blank
+                if (!obj.recipientName || String(obj.recipientName).trim() === '') {
+                    obj.recipientName = obj.recipientId ? `Employee (${String(obj.recipientId).slice(-6)})` : 'Unknown';
+                }
+                // Also prefix recipientId
+                if (obj.recipientId) obj.recipientId = `${storeId}_${String(obj.recipientId)}`;
             }
 
             const cleanObj = {};
@@ -293,7 +335,7 @@ export async function handleBackupImport(event) {
                         const { error: clearErr } = await supabase.from(table).delete().eq('store_id', currentStoreId);
                         if (clearErr) throw new Error(`Clear ${table} failed: ${clearErr.message}`);
                     }
-                    await insertAll(table, backupData[table], currentStoreId);
+                    await insertAll(table, backupData[table], currentStoreId, backupData['inventory']);
                 }
 
                 overlay.remove();
@@ -409,7 +451,7 @@ export async function handleBackupImport(event) {
                                         // Wipe existing data for this store+table then re-insert
                                         const { error: clearErr } = await supabase.from(table).delete().eq('store_id', sid);
                                         if (clearErr) throw new Error(`Clear ${table}/${sid} failed: ${clearErr.message}`);
-                                        await insertAll(table, rows, sid);
+                                        await insertAll(table, rows, sid, storeMap[sid]['inventory']);
                                     }
                                 }
                             }
