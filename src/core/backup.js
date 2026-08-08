@@ -514,3 +514,255 @@ export function initBackupScheduler() {
         }
     }, 30 * 60 * 1000);
 }
+
+// =========================================================================
+// ADHOC SUPABASE SNAPSHOT & RESTORE CORE
+// =========================================================================
+
+/**
+ * Checks connection health to detect if Supabase is cold/paused.
+ */
+export async function testSupabaseConnection() {
+    try {
+        const { data, error } = await supabase.from('stores').select('id').limit(1);
+        if (error) throw error;
+        return true;
+    } catch (err) {
+        console.error("Supabase connection check failed:", err);
+        return false;
+    }
+}
+
+/**
+ * Creates a database-wide JSON snapshot and saves it into public.backups table.
+ * Debounced to maximum of one snapshot per 24 hours for user activity.
+ */
+export async function createSupabaseSnapshot(triggerType = 'user_activity', force = false) {
+    try {
+        const isConnected = await testSupabaseConnection();
+        if (!isConnected) {
+            console.warn("Cannot create snapshot: Supabase is unreachable (likely paused).");
+            return { success: false, reason: 'paused' };
+        }
+
+        if (triggerType === 'user_activity' && !force) {
+            // Check last snapshot date to enforce 24h debounce
+            const { data: lastBackup, error: fetchErr } = await supabase
+                .from('backups')
+                .select('created_at')
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (!fetchErr && lastBackup && lastBackup.length > 0) {
+                const lastTime = new Date(lastBackup[0].created_at).getTime();
+                const diffMs = new Date().getTime() - lastTime;
+                const diffHours = diffMs / (1000 * 60 * 60);
+                if (diffHours < 24) {
+                    console.log(`Snapshot skipped: Last backup was only ${diffHours.toFixed(1)}h ago (limit: 1 per 24h).`);
+                    return { success: true, reason: 'debounced' };
+                }
+            }
+        }
+
+        console.log("Generating database snapshot data...");
+        const tables = ['stores', 'inventory', 'employees', 'disbursements', 'returns', 'resupplies', 'event_logs', 'user_roles'];
+        const snapshot = {
+            manifest: {
+                version: '1.0',
+                createdAt: new Date().toISOString(),
+                recordCounts: {}
+            },
+            data: {}
+        };
+
+        for (const table of tables) {
+            let query = supabase.from(table).select('*');
+            if (table === 'event_logs') {
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - 30);
+                query = query.gt('timestamp', cutoff.toISOString());
+            }
+
+            const { data, error } = await query;
+            if (error) {
+                console.error(`Error backing up table ${table}:`, error);
+                snapshot.data[table] = [];
+                snapshot.manifest.recordCounts[table] = 0;
+            } else {
+                snapshot.data[table] = data || [];
+                snapshot.manifest.recordCounts[table] = data ? data.length : 0;
+            }
+        }
+
+        // Save snapshot
+        const { error: insertErr } = await supabase
+            .from('backups')
+            .insert({
+                trigger_type: triggerType,
+                snapshot_data: snapshot
+            });
+
+        if (insertErr) throw insertErr;
+        console.log("Database backup snapshot saved successfully.");
+
+        // Prune old snapshots (keep latest 30)
+        const { data: backups, error: listErr } = await supabase
+            .from('backups')
+            .select('id')
+            .order('created_at', { ascending: false });
+
+        if (!listErr && backups && backups.length > 30) {
+            const idsToDelete = backups.slice(30).map(b => b.id);
+            await supabase.from('backups').delete().in('id', idsToDelete);
+            console.log(`Pruned ${idsToDelete.length} oldest backup snapshots.`);
+        }
+
+        return { success: true };
+    } catch (err) {
+        console.error("Failed to create Supabase snapshot:", err);
+        return { success: false, error: err.message };
+    }
+}
+
+/**
+ * Returns summary list of backups currently in the database.
+ */
+export async function getSupabaseSnapshots() {
+    try {
+        const { data, error } = await supabase
+            .from('backups')
+            .select('id, created_at, trigger_type, snapshot_data')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        
+        return data.map(b => {
+            const manifest = b.snapshot_data?.manifest || {};
+            return {
+                id: b.id,
+                created_at: b.created_at,
+                trigger_type: b.trigger_type,
+                recordCounts: manifest.recordCounts || {}
+            };
+        });
+    } catch (err) {
+        console.error("Error fetching snapshots:", err);
+        return [];
+    }
+}
+
+/**
+ * Downloads a snapshot from Supabase as a JSON file.
+ */
+export async function downloadSupabaseSnapshot(snapshotId) {
+    try {
+        const { data, error } = await supabase
+            .from('backups')
+            .select('snapshot_data, created_at')
+            .eq('id', snapshotId)
+            .single();
+
+        if (error) throw error;
+
+        const timestamp = new Date(data.created_at).toISOString().replace(/[:.]/g, '-');
+        const filename = `DOA_Database_Backup_${timestamp}.json`;
+        const blob = new Blob([JSON.stringify(data.snapshot_data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error("Failed to download snapshot:", err);
+        alert("Failed to download snapshot: " + err.message);
+    }
+}
+
+/**
+ * Restores a snapshot into Supabase database with ordered FK checks and batching.
+ */
+export async function restoreSupabaseSnapshot(snapshotId, mode = 'merge', onProgress) {
+    try {
+        const isConnected = await testSupabaseConnection();
+        if (!isConnected) {
+            throw new Error("Supabase is offline or paused. Please resume the database project first.");
+        }
+
+        const { data: backup, error: fetchErr } = await supabase
+            .from('backups')
+            .select('snapshot_data')
+            .eq('id', snapshotId)
+            .single();
+
+        if (fetchErr || !backup) throw new Error("Could not load snapshot data.");
+
+        const snapshot = backup.snapshot_data;
+        const tablesData = snapshot.data || {};
+        
+        // Define cleanup and restore steps in FK order
+        // Order: user_roles -> stores -> inventory, employees -> disbursements, returns, resupplies -> event_logs
+        const orderedTables = [
+            'user_roles',
+            'stores',
+            'inventory',
+            'employees',
+            'disbursements',
+            'returns',
+            'resupplies',
+            'event_logs'
+        ];
+
+        if (mode === 'replace') {
+            if (onProgress) onProgress('Clearing existing records for full replacement...', 5);
+            // Delete data in reverse FK order to prevent violation
+            const reverseTables = [...orderedTables].reverse();
+            for (const table of reverseTables) {
+                // Keep Admin role mapping intact so we don't lock ourselves out of RLS
+                if (table === 'user_roles') {
+                    const { error: delErr } = await supabase
+                        .from(table)
+                        .delete()
+                        .not('role', 'eq', 'Admin');
+                    if (delErr) console.warn(`Clean warning on ${table}:`, delErr);
+                } else {
+                    const { error: delErr } = await supabase.from(table).delete().neq('id', '_dummy_non_existent');
+                    if (delErr) console.warn(`Clean warning on ${table}:`, delErr);
+                }
+            }
+        }
+
+        let stepIndex = 0;
+        for (const table of orderedTables) {
+            stepIndex++;
+            const percent = Math.round((stepIndex / orderedTables.length) * 90) + 5;
+            const rows = tablesData[table] || [];
+
+            if (onProgress) onProgress(`Restoring ${table} (${rows.length} rows)...`, percent);
+
+            if (rows.length === 0) continue;
+
+            // Batch upsert in chunks of 500
+            const chunkSize = 500;
+            for (let i = 0; i < rows.length; i += chunkSize) {
+                const chunk = rows.slice(i, i + chunkSize);
+                const { error: upsertErr } = await supabase
+                    .from(table)
+                    .upsert(chunk);
+                if (upsertErr) {
+                    console.error(`Error upserting chunk in ${table}:`, upsertErr);
+                    throw new Error(`Restore failed on table ${table}: ${upsertErr.message}`);
+                }
+            }
+        }
+
+        if (onProgress) onProgress('Restore complete!', 100);
+        return { success: true };
+    } catch (err) {
+        console.error("Restore failed:", err);
+        return { success: false, error: err.message };
+    }
+}

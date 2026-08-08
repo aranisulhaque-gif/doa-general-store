@@ -6,7 +6,7 @@ import {
     currentStoreId, currentUserRole, allStores, pagination, syncState,
     storeListenerUnsubscribe, setStoreListenerUnsubscribe, resetStoreData
 } from './core/state.js';
-import { exportStoreBackup, checkBackupPolicy, initBackupScheduler, handleBackupImport } from './core/backup.js';
+import { exportStoreBackup, checkBackupPolicy, initBackupScheduler, handleBackupImport, createSupabaseSnapshot } from './core/backup.js';
 import { renderUI } from './ui/render.js';
 import * as modals from './ui/modals.js';
 import * as dashboard from './ui/dashboard.js';
@@ -98,6 +98,11 @@ export async function saveStoreData(updates) {
         }
 
         console.log("Data saved to Supabase successfully.");
+        
+        // Trigger debounced user backup snapshot (1 snapshot per 24h max)
+        createSupabaseSnapshot('user_activity').catch(err => {
+            console.error("Non-blocking background snapshot failed:", err);
+        });
     } catch (error) {
         console.error("Error saving data to Supabase:", error);
         showMessageModal("Error", "Failed to save data. Changes might not persist.");
@@ -625,4 +630,24 @@ document.addEventListener('click', (e) => {
     // Return form
     const returnForm = document.getElementById('returnForm');
     if (returnForm) returnForm.onsubmit = recordReturn;
+
+    // Silent browser keep-alive ping: runs every 48 hours to reset Supabase inactivity timer
+    setInterval(async () => {
+        try {
+            console.log("Performing silent browser keepalive ping...");
+            await supabase.from('stores').select('id').limit(1);
+        } catch (err) {
+            console.error("Silent browser keepalive failed:", err);
+        }
+    }, 48 * 60 * 60 * 1000);
+
+    // Run once immediately on startup as well
+    setTimeout(async () => {
+        try {
+            await supabase.from('stores').select('id').limit(1);
+            console.log("Initial startup keepalive ping successful.");
+        } catch (err) {
+            console.error("Initial startup keepalive ping failed:", err);
+        }
+    }, 5000);
 }

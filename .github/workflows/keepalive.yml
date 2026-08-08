@@ -1,0 +1,26 @@
+name: Supabase Keep-Alive & Auto-Backup
+
+on:
+  schedule:
+    - cron: '0 0 */5 * *'  # Runs every 5 days at midnight
+  workflow_dispatch:      # Allows manual trigger from GitHub UI
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-level: '20'
+
+      - name: Run Keep-Alive Script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://qveuxkdkgyamyneaaxkk.supabase.co' }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2ZXV4a2RrZ3lhbXluZWFheGtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNTUzMTAsImV4cCI6MjEwMDgzMTMxMH0.odYjWoDyfJ79xyWOZNC7CvuIoJ82gwhKSFp6kVtsDxo' }}
+          SERVICES_SUPABASE_URL: ${{ secrets.SERVICES_SUPABASE_URL }}
+          SERVICES_SUPABASE_ANON_KEY: ${{ secrets.SERVICES_SUPABASE_ANON_KEY }}
+        run: node supabase/keepalive.js

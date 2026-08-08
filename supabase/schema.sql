@@ -142,3 +142,30 @@ INSERT INTO public.user_roles (email, role) VALUES
     ('manager.general@doa-ailab.com', 'Manager'),
     ('storekeeper.general@doa-ailab.com', 'Storekeeper')
 ON CONFLICT (email) DO UPDATE SET role = EXCLUDED.role;
+
+-- ============================================================
+-- 9. BACKUPS (Adhoc Snapshot system)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.backups (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    trigger_type TEXT NOT NULL, -- 'user_activity' or 'keep_alive'
+    snapshot_data JSONB NOT NULL
+);
+
+ALTER TABLE public.backups ENABLE ROW LEVEL SECURITY;
+
+-- Allow authenticated users to read backup list and Admins to manage
+CREATE POLICY "Authenticated users read backups" ON public.backups
+    FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Admin full access backups" ON public.backups
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM public.user_roles 
+            WHERE email = auth.email() AND role = 'Admin'
+        )
+    );
+
+CREATE INDEX IF NOT EXISTS idx_backups_created_at ON public.backups(created_at DESC);
+

@@ -821,11 +821,11 @@
                                     <h3 class="font-bold text-lg text-slate-800"><i
                                             class="fas fa-history mr-2 text-indigo-500"></i> Backup & Restore</h3>
                                     <div class="flex gap-2">
-                                        <button id="importJsonBtn" onclick="triggerImportJSON()"
+                                        <button id="importJsonBtn" onclick="document.getElementById('importOldJsonInput').click()"
                                             class="px-3 py-1.5 bg-indigo-500 text-white rounded text-sm font-medium shadow-sm hover:bg-indigo-600 transition-colors">
                                             <i class="fas fa-file-import mr-1"></i> Import JSON
                                         </button>
-                                        <button id="exportJsonBtn" onclick="triggerExportJSON()"
+                                        <button id="exportJsonBtn" onclick="triggerManualSnapshot()"
                                             class="px-3 py-1.5 bg-emerald-500 text-white rounded text-sm font-medium shadow-sm hover:bg-emerald-600 transition-colors">
                                             <i class="fas fa-file-export mr-1"></i> Export JSON
                                         </button>

@@ -4,6 +4,8 @@ import { showMessageModal, showConfirmationModal, hideModal } from '../utils/hel
 import { updateBatchDeleteButton } from './inventory.js';
 import { renderUI } from './render.js';
 import { renderEventLog } from './eventLog.js';
+import { renderBackupList } from './backups.js';
+
 
 export function populateEmployeeSelectors() {
     const options = (storeData.employees || []).map(e => `<option value="${e.id}">${e.name} (${e.designation})</option>`).join('');
@@ -132,6 +134,7 @@ export function showTab(tabId) {
     // Specific logic for tab-specific renders
     if (tabId === 'data-storage') {
         renderEventLog();
+        renderBackupList();
     }
 }
 
