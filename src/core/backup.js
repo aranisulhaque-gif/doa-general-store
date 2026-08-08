@@ -110,9 +110,11 @@ export async function handleBackupImport(event) {
     const insertAll = async (table, rows, storeId) => {
         if (!rows || rows.length === 0) return;
         const allowedKeys = schemas[table] || [];
-        
+
         const tagged = rows.map(r => {
+            // Normalise storeId → store_id (Excel exports use camelCase)
             const obj = { ...r, store_id: storeId };
+            if (obj.storeId !== undefined) delete obj.storeId;
             if (obj.date && !obj.timestamp) obj.timestamp = obj.date;
             
             const dateFields = ['timestamp', 'lastResupplyDate'];
@@ -311,8 +313,7 @@ export async function handleBackupImport(event) {
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const backupData = {};
-                
+
                 const sheetMap = {
                     inventory: 'inventory',
                     employees: 'employees',
@@ -321,17 +322,110 @@ export async function handleBackupImport(event) {
                     resupplies: 'resupplies'
                 };
 
+                // Helper: parse a sheet, auto-detecting blank leading rows
+                const parseSheet = (sheetName) => {
+                    const ws = workbook.Sheets[sheetName];
+                    // Try default parse first
+                    let rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+                    // If first row has no recognisable columns (e.g. __EMPTY), scan raw rows
+                    // to find the actual header row and re-parse from there
+                    if (rows.length > 0 && Object.keys(rows[0]).every(k => k.startsWith('__EMPTY'))) {
+                        const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                        // Find first row that looks like a real header (contains 'id' or 'storeId')
+                        const headerIdx = raw.findIndex(r =>
+                            r.some(cell => typeof cell === 'string' && ['id','storeId','store_id'].includes(cell.trim()))
+                        );
+                        if (headerIdx !== -1) {
+                            const headers = raw[headerIdx];
+                            rows = raw.slice(headerIdx + 1)
+                                .filter(r => r.some(cell => cell !== ''))
+                                .map(r => {
+                                    const obj = {};
+                                    headers.forEach((h, i) => { if (h) obj[h] = r[i] ?? ''; });
+                                    return obj;
+                                });
+                        }
+                    }
+                    return rows;
+                };
+
+                // Collect all rows per collection, grouped by storeId
+                // Structure: storeMap[storeId][collection] = rows[]
+                const storeMap = {};
+                const flatBackup = {};  // fallback for single-store files
+
                 workbook.SheetNames.forEach(sheetName => {
                     const lowerName = sheetName.toLowerCase().trim();
                     const standardName = sheetMap[lowerName];
-                    if (standardName) {
-                        const worksheet = workbook.Sheets[sheetName];
-                        const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-                        backupData[standardName] = rawRows;
+                    if (!standardName) return;
+
+                    const rows = parseSheet(sheetName);
+                    flatBackup[standardName] = rows;
+
+                    // Check if rows contain a storeId column (multi-store export)
+                    if (rows.length > 0 && (rows[0].storeId !== undefined || rows[0].store_id !== undefined)) {
+                        rows.forEach(row => {
+                            const sid = String(row.storeId ?? row.store_id ?? '').trim();
+                            if (!sid) return;
+                            if (!storeMap[sid]) storeMap[sid] = {};
+                            if (!storeMap[sid][standardName]) storeMap[sid][standardName] = [];
+                            storeMap[sid][standardName].push(row);
+                        });
                     }
                 });
 
-                await processBackupData(backupData);
+                // Also pull store names from STORES sheet if present
+                if (workbook.SheetNames.some(s => s.toLowerCase() === 'stores')) {
+                    const storesWs = workbook.Sheets[workbook.SheetNames.find(s => s.toLowerCase() === 'stores')];
+                    const storeRows = XLSX.utils.sheet_to_json(storesWs, { defval: '' });
+                    storeRows.forEach(sr => {
+                        const sid = String(sr.storeId ?? sr.store_id ?? sr.id ?? '').trim();
+                        if (sid && storeMap[sid]) {
+                            storeMap[sid].name = sr.name || sid;
+                            storeMap[sid].location = sr.location || '';
+                        }
+                    });
+                }
+
+                const isMultiStore = Object.keys(storeMap).length > 1;
+
+                if (isMultiStore) {
+                    // Show store-selection modal, then import selected stores in sequence
+                    buildImportStoreModal(storeMap, async (selectedStoreIds) => {
+                        const overlay = document.createElement('div');
+                        overlay.id = 'importProgressOverlay';
+                        overlay.className = 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm text-white text-center';
+                        overlay.innerHTML = `<div class="text-5xl mb-4"><i class="fas fa-spinner fa-spin"></i></div>
+                          <div class="text-xl font-bold" id="importProgressMsg">Importing data…</div>`;
+                        document.body.appendChild(overlay);
+                        try {
+                            for (const sid of selectedStoreIds) {
+                                const msg = document.getElementById('importProgressMsg');
+                                if (msg) msg.textContent = `Importing store ${storeMap[sid]?.name || sid}…`;
+                                const tables = ['inventory', 'employees', 'disbursements', 'returns', 'resupplies'];
+                                for (const table of tables) {
+                                    const rows = storeMap[sid][table];
+                                    if (rows && rows.length > 0) {
+                                        // Wipe existing data for this store+table then re-insert
+                                        const { error: clearErr } = await supabase.from(table).delete().eq('store_id', sid);
+                                        if (clearErr) throw new Error(`Clear ${table}/${sid} failed: ${clearErr.message}`);
+                                        await insertAll(table, rows, sid);
+                                    }
+                                }
+                            }
+                            overlay.remove();
+                            alert(`✅ Import complete! ${selectedStoreIds.length} store(s) imported.\nThe page will now reload.`);
+                            window.location.reload();
+                        } catch (err) {
+                            overlay.remove();
+                            console.error('Import failed:', err);
+                            alert(`❌ Import failed: ${err.message}`);
+                        }
+                    });
+                } else {
+                    // Single-store file — fall through to the settings modal
+                    await processBackupData(flatBackup);
+                }
             } catch (err) {
                 alert(`Failed to parse Excel file: ${err.message}`);
             }
