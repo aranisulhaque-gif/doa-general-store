@@ -74,7 +74,7 @@ export function renderDashboard() {
                     <i class="fas fa-arrow-right stat-card-arrow text-emerald-400"></i>
                 </button>
                 <!-- Low Stock/OOS -->
-                <button class="glass-card stat-card stat-card-btn" onclick="(function(){ var f=document.getElementById('inventoryStockFilter'); if(f) f.value='low'; window.showTab('inventory'); })()" title="Go to Low Stock Inventory">
+                <button class="glass-card stat-card stat-card-btn" onclick="(function(){ var f=document.getElementById('inventoryStockFilter'); if(f) f.value='low'; window.showTab('inventory'); if(window.filterInventory) window.filterInventory(); })()" title="Go to Low Stock Inventory">
                     <div class="stat-icon bg-orange-50 text-orange-600"><i class="fas fa-exclamation-triangle"></i></div>
                     <div>
                         <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Low Stock/OOS</p>
