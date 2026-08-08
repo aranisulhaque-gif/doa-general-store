@@ -46,6 +46,57 @@ export async function saveStoreData(updates) {
             });
 
         if (error) throw error;
+
+        // 2. Write tables (inventory, employees, disbursements, returns, resupplies)
+        const schemas = {
+            inventory: ['id', 'store_id', 'name', 'specification', 'quantity', 'lastResupplyDate', 'latestTenderId'],
+            employees: ['id', 'store_id', 'name', 'designation'],
+            disbursements: ['id', 'store_id', 'recipientId', 'recipientName', 'items', 'totalItems', 'timestamp'],
+            returns: ['id', 'store_id', 'recipientId', 'recipientName', 'items', 'totalItems', 'timestamp'],
+            resupplies: ['id', 'store_id', 'itemId', 'itemName', 'quantity', 'tenderId', 'timestamp']
+        };
+
+        const tables = ['inventory', 'employees', 'disbursements', 'returns', 'resupplies'];
+        for (const table of tables) {
+            if (updates[table] !== undefined) {
+                const list = updates[table];
+                const allowedKeys = schemas[table];
+
+                // 1. Delete rows not in updates anymore
+                const idsToKeep = list.map(item => item.id).filter(Boolean);
+                if (idsToKeep.length > 0) {
+                    const { error: delErr } = await supabase
+                        .from(table)
+                        .delete()
+                        .eq('store_id', currentStoreId)
+                        .not('id', 'in', `(${idsToKeep.join(',')})`);
+                    if (delErr) throw delErr;
+                } else {
+                    const { error: delErr } = await supabase
+                        .from(table)
+                        .delete()
+                        .eq('store_id', currentStoreId);
+                    if (delErr) throw delErr;
+                }
+
+                // 2. Upsert the current items
+                if (list.length > 0) {
+                    const mappedRows = list.map(item => {
+                        const obj = { ...item, store_id: currentStoreId };
+                        const cleanObj = {};
+                        for (const key of allowedKeys) {
+                            if (obj[key] !== undefined) cleanObj[key] = obj[key];
+                        }
+                        return cleanObj;
+                    });
+                    const { error: upsertErr } = await supabase
+                        .from(table)
+                        .upsert(mappedRows);
+                    if (upsertErr) throw upsertErr;
+                }
+            }
+        }
+
         console.log("Data saved to Supabase successfully.");
     } catch (error) {
         console.error("Error saving data to Supabase:", error);
