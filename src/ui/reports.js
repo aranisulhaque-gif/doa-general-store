@@ -448,7 +448,15 @@ function renderItemReport() {
         if (row) transactions.push({ date: r.timestamp, type: 'RETURN', qty: row.quantity, details: resolveRecipientName(r.recipientId, r.recipientName) });
     });
     (storeData.resupplies || []).forEach(rs => {
-        if (rs.itemId === itemId) transactions.push({ date: rs.date, type: 'RESUPPLY', qty: rs.quantity, details: rs.tenderId || 'N/A' });
+        if (rs.itemId === itemId) {
+            const isInitial = rs.type === 'Initial Stock' || (!rs.tenderId && !rs.type);
+            transactions.push({ 
+                date: rs.date || rs.timestamp, 
+                type: isInitial ? 'INITIAL_STOCK' : 'RESUPPLY', 
+                qty: rs.quantity, 
+                details: isInitial ? 'N/A' : (rs.tenderId || 'N/A') 
+            });
+        }
     });
 
     // Sort chronologically (oldest first) so that the latest transaction is at the bottom
@@ -458,6 +466,21 @@ function renderItemReport() {
     const tableRows = transactions.map((t, idx) => {
         let changeStr = '';
         let typeDisplay = t.type;
+
+        if (t.type === 'INITIAL_STOCK') {
+            runningBalance += t.qty;
+            return `
+                <tr>
+                    <td>N/A</td>
+                    <td>Initial Stock</td>
+                    <td>+${t.qty}</td>
+                    <td>${runningBalance}</td>
+                    <td>N/A</td>
+                </tr>
+            `;
+        }
+
+        runningBalance += t.qty;
 
         if (t.type === 'DISBURSEMENT') {
             changeStr = `${t.qty}`; // negative (e.g. -1, -10)
@@ -469,24 +492,6 @@ function renderItemReport() {
             changeStr = `+${t.qty}`;
             typeDisplay = 'Resupply';
         }
-
-        if (idx === 0) {
-            // First row matches the first user format pattern:
-            // Date: N/A, Type: Initial Stock, Change: +Qty, Balance: Qty, Details: N/A
-            runningBalance = Math.abs(t.qty);
-            const initChangeStr = `+${runningBalance}`;
-            return `
-                <tr>
-                    <td>N/A</td>
-                    <td>Initial Stock</td>
-                    <td>${initChangeStr}</td>
-                    <td>${runningBalance}</td>
-                    <td>N/A</td>
-                </tr>
-            `;
-        }
-
-        runningBalance += t.qty;
 
         return `
             <tr>
