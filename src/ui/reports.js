@@ -451,17 +451,62 @@ function renderItemReport() {
         if (rs.itemId === itemId) transactions.push({ date: rs.date, type: 'RESUPPLY', qty: rs.quantity, details: rs.tenderId || 'N/A' });
     });
 
+    // Sort chronologically (oldest first) to build the running balance correctly
     transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    let balance = 0;
-    const tableRows = transactions.map(t => {
-        balance += t.qty;
+    // Calculate initial stock before these transactions
+    // Since we know the final item quantity is item.quantity, we can reconstruct the starting balance,
+    // or we can compute it starting from 0 if we assume the history contains all transactions including resupplies.
+    // Let's compute the running balance starting from 0, representing the item's lifetime history.
+    // If the first transaction isn't an initial stock record, we can prepend one representing the initial/starting baseline.
+    let runningBalance = 0;
+    const formattedRows = [];
+
+    // Let's check if there is already an initial supply or resupply.
+    // To match the user's format exactly:
+    // First row: Initial Stock/supply/resupply | N/A | <InitialQty> | Initial Stock/supply/resupply
+    // We can insert a starting row at balance = 0 or treat the first resupply/transaction as initial.
+    // Let's prepend an "Initial Stock/supply/resupply" row if the first transaction isn't already one,
+    // or simply format the transactions list.
+    
+    let isFirst = true;
+    const tableRows = transactions.map((t, idx) => {
+        runningBalance += t.qty;
+        let changeStr = '';
+        if (t.type === 'RESUPPLY') {
+            changeStr = `+${t.qty}`;
+        } else if (t.type === 'DISBURSEMENT') {
+            changeStr = `${t.qty}`; // Already negative
+        } else if (t.type === 'RETURN') {
+            changeStr = `+${t.qty}`;
+        }
+
+        let typeDisplay = t.type;
+        if (t.type === 'DISBURSEMENT') typeDisplay = 'Disbursement';
+        if (t.type === 'RESUPPLY') typeDisplay = 'Resupply';
+        if (t.type === 'RETURN') typeDisplay = 'Return';
+
+        // If it's the very first row, let's show it as Initial Stock/supply/resupply if it was a Resupply
+        if (isFirst && t.type === 'RESUPPLY') {
+            isFirst = false;
+            return `
+                <tr>
+                    <td>${formatDate(t.date)}</td>
+                    <td>Initial Stock/supply/resupply</td>
+                    <td>N/A</td>
+                    <td>${runningBalance}</td>
+                    <td>Initial Stock/supply/resupply</td>
+                </tr>
+            `;
+        }
+        isFirst = false;
+
         return `
             <tr>
                 <td>${formatDate(t.date)}</td>
-                <td>${t.type}</td>
-                <td class="${t.qty > 0 ? 'text-green-600' : 'text-red-600'}">${t.qty > 0 ? '+' : ''}${t.qty}</td>
-                <td>${balance}</td>
+                <td>${typeDisplay}</td>
+                <td>${changeStr}</td>
+                <td>${runningBalance}</td>
                 <td>${t.details}</td>
             </tr>
         `;
@@ -470,12 +515,15 @@ function renderItemReport() {
     const content = `
         <div class="print-preview-content">
             ${getReportHeader(`Transaction Report: ${item.name}`)}
-            <table class="w-full border-collapse border border-slate-300" style="color: #000;">
+            <table class="w-full border-collapse border border-slate-300" style="color: #000; margin-bottom: 15px;">
             <thead class="bg-slate-100">
                 <tr><th>Date</th><th>Type</th><th>Change</th><th>Balance</th><th>Details</th></tr>
             </thead>
             <tbody>${tableRows}</tbody>
         </table>
+        <div style="font-weight: bold; font-size: 12pt; margin-top: 10px; color: #000;">
+            Current Stock: ${item.quantity}
+        </div>
         </div>
     `;
 
