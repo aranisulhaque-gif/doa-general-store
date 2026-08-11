@@ -462,25 +462,35 @@ function renderItemReport() {
     // Sort chronologically (oldest first) so that the latest transaction is at the bottom
     transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    let runningBalance = 0;
+    // The user wants the last row's balance to match the current stock (item.quantity) exactly.
+    // To achieve this, we can calculate the running balances by working backward from the current stock.
+    // Let's first calculate the balances backward.
+    const balances = new Array(transactions.length);
+    let currentTempBalance = item.quantity;
+    
+    // Work backward from the final balance
+    for (let i = transactions.length - 1; i >= 0; i--) {
+        balances[i] = currentTempBalance;
+        // Undo the transaction's quantity change to get the previous balance
+        currentTempBalance -= transactions[i].qty;
+    }
+
     const tableRows = transactions.map((t, idx) => {
         let changeStr = '';
         let typeDisplay = t.type;
+        const rowBalance = balances[idx];
 
         if (t.type === 'INITIAL_STOCK') {
-            runningBalance += t.qty;
             return `
                 <tr>
                     <td>N/A</td>
                     <td>Initial Stock</td>
                     <td>+${t.qty}</td>
-                    <td>${runningBalance}</td>
+                    <td>${rowBalance}</td>
                     <td>N/A</td>
                 </tr>
             `;
         }
-
-        runningBalance += t.qty;
 
         if (t.type === 'DISBURSEMENT') {
             changeStr = `${t.qty}`; // negative (e.g. -1, -10)
@@ -498,7 +508,7 @@ function renderItemReport() {
                 <td>${formatDate(t.date)}</td>
                 <td>${typeDisplay}</td>
                 <td>${changeStr}</td>
-                <td>${runningBalance}</td>
+                <td>${rowBalance}</td>
                 <td>${t.details}</td>
             </tr>
         `;
