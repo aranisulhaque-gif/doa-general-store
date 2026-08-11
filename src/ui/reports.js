@@ -460,7 +460,7 @@ function renderItemReport() {
         let typeDisplay = t.type;
 
         if (t.type === 'DISBURSEMENT') {
-            changeStr = `${t.qty}`; // negative
+            changeStr = `${t.qty}`; // negative (e.g. -1, -10)
             typeDisplay = 'Disbursement';
         } else if (t.type === 'RETURN') {
             changeStr = `+${t.qty}`;
@@ -471,17 +471,17 @@ function renderItemReport() {
         }
 
         if (idx === 0) {
-            // First row represents the initial stock/supply.
-            // Force the Balance to equal the absolute value of the initial transaction quantity (or its quantity),
-            // and the Change to be N/A.
+            // First row matches the first user format pattern:
+            // Date: N/A, Type: Initial Stock, Change: +Qty, Balance: Qty, Details: N/A
             runningBalance = Math.abs(t.qty);
+            const initChangeStr = `+${runningBalance}`;
             return `
                 <tr>
-                    <td>${formatDate(t.date)}</td>
-                    <td>Initial Stock/supply/resupply</td>
                     <td>N/A</td>
+                    <td>Initial Stock</td>
+                    <td>${initChangeStr}</td>
                     <td>${runningBalance}</td>
-                    <td>Initial Stock/supply/resupply</td>
+                    <td>N/A</td>
                 </tr>
             `;
         }
@@ -508,8 +508,9 @@ function renderItemReport() {
             </thead>
             <tbody>${tableRows}</tbody>
         </table>
-        <div style="font-weight: bold; font-size: 12pt; margin-top: 10px; color: #000;">
-            Current Stock: ${item.quantity}
+        <div style="font-weight: bold; font-size: 11pt; color: #000; margin-top: 15px; display: flex; flex-direction: column;">
+            <div>Current Stock:</div>
+            <div style="padding-left: 20px; font-size: 14pt;">${item.quantity}</div>
         </div>
         </div>
     `;
