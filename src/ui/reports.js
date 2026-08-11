@@ -418,14 +418,34 @@ function renderItemReport() {
     if (!itemId) return showMessageModal("Error", "Please select an item.");
     const item = storeData.inventory.find(i => i.id === itemId);
 
+    // Helper: resolve employee name — 3-tier fallback
+    // 1) Look up by recipientId in employees list
+    // 2) If recipientName looks like an ID (no spaces), search employees by that value
+    // 3) Last resort: return recipientName as-is or 'Unknown'
+    const resolveRecipientName = (recipientId, recipientName) => {
+        const employees = storeData.employees || [];
+        // Tier 1: direct recipientId lookup
+        if (recipientId) {
+            const emp = employees.find(e => e.id === recipientId);
+            if (emp && emp.name) return emp.name;
+        }
+        // Tier 2: treat recipientName as an employee ID and search
+        if (recipientName && !recipientName.includes(' ')) {
+            const emp = employees.find(e => e.id === recipientName);
+            if (emp && emp.name) return emp.name;
+        }
+        // Tier 3: last resort — return stored string or 'Unknown'
+        return recipientName || 'Unknown';
+    };
+
     const transactions = [];
     (storeData.disbursements || []).forEach(d => {
         const row = d.items.find(i => i.id === itemId);
-        if (row) transactions.push({ date: d.timestamp, type: 'DISBURSEMENT', qty: -row.quantity, details: d.recipientName });
+        if (row) transactions.push({ date: d.timestamp, type: 'DISBURSEMENT', qty: -row.quantity, details: resolveRecipientName(d.recipientId, d.recipientName) });
     });
     (storeData.returns || []).forEach(r => {
         const row = r.items.find(i => i.id === itemId);
-        if (row) transactions.push({ date: r.timestamp, type: 'RETURN', qty: row.quantity, details: r.recipientName });
+        if (row) transactions.push({ date: r.timestamp, type: 'RETURN', qty: row.quantity, details: resolveRecipientName(r.recipientId, r.recipientName) });
     });
     (storeData.resupplies || []).forEach(rs => {
         if (rs.itemId === itemId) transactions.push({ date: rs.date, type: 'RESUPPLY', qty: rs.quantity, details: rs.tenderId || 'N/A' });
