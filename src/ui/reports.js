@@ -451,44 +451,30 @@ function renderItemReport() {
         if (rs.itemId === itemId) transactions.push({ date: rs.date, type: 'RESUPPLY', qty: rs.quantity, details: rs.tenderId || 'N/A' });
     });
 
-    // Sort chronologically (oldest first) to build the running balance correctly
+    // Sort chronologically (oldest first) so that the latest transaction is at the bottom
     transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // Calculate initial stock before these transactions
-    // Since we know the final item quantity is item.quantity, we can reconstruct the starting balance,
-    // or we can compute it starting from 0 if we assume the history contains all transactions including resupplies.
-    // Let's compute the running balance starting from 0, representing the item's lifetime history.
-    // If the first transaction isn't an initial stock record, we can prepend one representing the initial/starting baseline.
     let runningBalance = 0;
-    const formattedRows = [];
-
-    // Let's check if there is already an initial supply or resupply.
-    // To match the user's format exactly:
-    // First row: Initial Stock/supply/resupply | N/A | <InitialQty> | Initial Stock/supply/resupply
-    // We can insert a starting row at balance = 0 or treat the first resupply/transaction as initial.
-    // Let's prepend an "Initial Stock/supply/resupply" row if the first transaction isn't already one,
-    // or simply format the transactions list.
-    
-    let isFirst = true;
     const tableRows = transactions.map((t, idx) => {
-        runningBalance += t.qty;
         let changeStr = '';
-        if (t.type === 'RESUPPLY') {
-            changeStr = `+${t.qty}`;
-        } else if (t.type === 'DISBURSEMENT') {
-            changeStr = `${t.qty}`; // Already negative
+        let typeDisplay = t.type;
+
+        if (t.type === 'DISBURSEMENT') {
+            changeStr = `${t.qty}`; // negative
+            typeDisplay = 'Disbursement';
         } else if (t.type === 'RETURN') {
             changeStr = `+${t.qty}`;
+            typeDisplay = 'Return';
+        } else if (t.type === 'RESUPPLY') {
+            changeStr = `+${t.qty}`;
+            typeDisplay = 'Resupply';
         }
 
-        let typeDisplay = t.type;
-        if (t.type === 'DISBURSEMENT') typeDisplay = 'Disbursement';
-        if (t.type === 'RESUPPLY') typeDisplay = 'Resupply';
-        if (t.type === 'RETURN') typeDisplay = 'Return';
-
-        // If it's the very first row, let's show it as Initial Stock/supply/resupply if it was a Resupply
-        if (isFirst && t.type === 'RESUPPLY') {
-            isFirst = false;
+        if (idx === 0) {
+            // First row represents the initial stock/supply.
+            // Force the Balance to equal the absolute value of the initial transaction quantity (or its quantity),
+            // and the Change to be N/A.
+            runningBalance = Math.abs(t.qty);
             return `
                 <tr>
                     <td>${formatDate(t.date)}</td>
@@ -499,7 +485,8 @@ function renderItemReport() {
                 </tr>
             `;
         }
-        isFirst = false;
+
+        runningBalance += t.qty;
 
         return `
             <tr>
