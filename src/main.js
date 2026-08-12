@@ -28,85 +28,109 @@ function setStoredStoreId(id) { localStorage.setItem('lastSelectedStoreId', id);
 // =========================================================================
 // CORE DATA MANAGEMENT
 // =========================================================================
-export async function saveStoreData(updates) {
-    if (!currentStoreId) return console.error("No store selected for saving.");
-    try {
-        // Optimistic UI update
-        Object.keys(updates).forEach(key => { storeData[key] = updates[key]; });
-        renderUI();
+let pendingSavesCount = 0;
+let needsReloadAfterSave = false;
+let saveQueue = Promise.resolve();
 
-        // 1. Primary Write: Supabase (Upsert stores table)
-        const { error } = await supabase
-            .from('stores')
-            .upsert({
-                id: currentStoreId,
-                name: storeData.name,
-                location: storeData.location,
-                last_modified: new Date().toISOString()
-            });
+async function executeSaveStoreData(updates) {
+    // 1. Primary Write: Supabase (Upsert stores table)
+    const { error } = await supabase
+        .from('stores')
+        .upsert({
+            id: currentStoreId,
+            name: storeData.name,
+            location: storeData.location,
+            last_modified: new Date().toISOString()
+        });
 
-        if (error) throw error;
+    if (error) throw error;
 
-        // 2. Write tables (inventory, employees, disbursements, returns, resupplies)
-        const schemas = {
-            inventory: ['id', 'store_id', 'name', 'specification', 'quantity', 'lastResupplyDate', 'latestTenderId'],
-            employees: ['id', 'store_id', 'name', 'designation'],
-            disbursements: ['id', 'store_id', 'recipientId', 'recipientName', 'items', 'totalItems', 'timestamp'],
-            returns: ['id', 'store_id', 'recipientId', 'recipientName', 'items', 'totalItems', 'timestamp'],
-            resupplies: ['id', 'store_id', 'itemId', 'itemName', 'quantity', 'tenderId', 'timestamp']
-        };
+    // 2. Write tables (inventory, employees, disbursements, returns, resupplies)
+    const schemas = {
+        inventory: ['id', 'store_id', 'name', 'specification', 'quantity', 'lastResupplyDate', 'latestTenderId'],
+        employees: ['id', 'store_id', 'name', 'designation'],
+        disbursements: ['id', 'store_id', 'recipientId', 'recipientName', 'items', 'totalItems', 'timestamp'],
+        returns: ['id', 'store_id', 'recipientId', 'recipientName', 'items', 'totalItems', 'timestamp'],
+        resupplies: ['id', 'store_id', 'itemId', 'itemName', 'quantity', 'tenderId', 'timestamp']
+    };
 
-        const tables = ['inventory', 'employees', 'disbursements', 'returns', 'resupplies'];
-        for (const table of tables) {
-            if (updates[table] !== undefined) {
-                const list = updates[table];
-                const allowedKeys = schemas[table];
+    const tables = ['inventory', 'employees', 'disbursements', 'returns', 'resupplies'];
+    for (const table of tables) {
+        if (updates[table] !== undefined) {
+            const list = updates[table];
+            const allowedKeys = schemas[table];
 
-                // 1. Delete rows not in updates anymore
-                const idsToKeep = list.map(item => item.id).filter(Boolean);
-                if (idsToKeep.length > 0) {
-                    const { error: delErr } = await supabase
-                        .from(table)
-                        .delete()
-                        .eq('store_id', currentStoreId)
-                        .not('id', 'in', `(${idsToKeep.join(',')})`);
-                    if (delErr) throw delErr;
-                } else {
-                    const { error: delErr } = await supabase
-                        .from(table)
-                        .delete()
-                        .eq('store_id', currentStoreId);
-                    if (delErr) throw delErr;
-                }
+            // 1. Delete rows not in updates anymore
+            const idsToKeep = list.map(item => item.id).filter(Boolean);
+            if (idsToKeep.length > 0) {
+                const { error: delErr } = await supabase
+                    .from(table)
+                    .delete()
+                    .eq('store_id', currentStoreId)
+                    .not('id', 'in', `(${idsToKeep.join(',')})`);
+                if (delErr) throw delErr;
+            } else {
+                const { error: delErr } = await supabase
+                    .from(table)
+                    .delete()
+                    .eq('store_id', currentStoreId);
+                if (delErr) throw delErr;
+            }
 
-                // 2. Upsert the current items
-                if (list.length > 0) {
-                    const mappedRows = list.map(item => {
-                        const obj = { ...item, store_id: currentStoreId };
-                        const cleanObj = {};
-                        for (const key of allowedKeys) {
-                            if (obj[key] !== undefined) cleanObj[key] = obj[key];
-                        }
-                        return cleanObj;
-                    });
-                    const { error: upsertErr } = await supabase
-                        .from(table)
-                        .upsert(mappedRows);
-                    if (upsertErr) throw upsertErr;
-                }
+            // 2. Upsert the current items
+            if (list.length > 0) {
+                const mappedRows = list.map(item => {
+                    const obj = { ...item, store_id: currentStoreId };
+                    const cleanObj = {};
+                    for (const key of allowedKeys) {
+                        if (obj[key] !== undefined) cleanObj[key] = obj[key];
+                    }
+                    return cleanObj;
+                });
+                const { error: upsertErr } = await supabase
+                    .from(table)
+                    .upsert(mappedRows);
+                if (upsertErr) throw upsertErr;
             }
         }
-
-        console.log("Data saved to Supabase successfully.");
-        
-        // Trigger debounced user backup snapshot (1 snapshot per 24h max)
-        createSupabaseSnapshot('user_activity').catch(err => {
-            console.error("Non-blocking background snapshot failed:", err);
-        });
-    } catch (error) {
-        console.error("Error saving data to Supabase:", error);
-        showMessageModal("Error", "Failed to save data. Changes might not persist.");
     }
+
+    console.log("Data saved to Supabase successfully.");
+    
+    // Trigger debounced user backup snapshot (1 snapshot per 24h max)
+    createSupabaseSnapshot('user_activity').catch(err => {
+        console.error("Non-blocking background snapshot failed:", err);
+    });
+}
+
+export async function saveStoreData(updates) {
+    if (!currentStoreId) return console.error("No store selected for saving.");
+    
+    // Optimistic UI update
+    Object.keys(updates).forEach(key => { storeData[key] = updates[key]; });
+    renderUI();
+
+    pendingSavesCount++;
+
+    return new Promise((resolve, reject) => {
+        saveQueue = saveQueue.then(async () => {
+            try {
+                await executeSaveStoreData(updates);
+                resolve();
+            } catch (error) {
+                console.error("Error saving data to Supabase:", error);
+                showMessageModal("Error", "Failed to save data. Changes might not persist.");
+                reject(error);
+            } finally {
+                pendingSavesCount--;
+                if (pendingSavesCount === 0 && needsReloadAfterSave) {
+                    needsReloadAfterSave = false;
+                    console.log("Save queue cleared, triggering deferred reload...");
+                    loadStoreData().catch(err => console.error("Deferred loadStoreData failed:", err));
+                }
+            }
+        });
+    });
 }
 
 
@@ -339,6 +363,11 @@ async function loadStoreData() {
             .on('postgres_changes', { event: '*', schema: 'public', filter: `store_id=eq.${currentStoreId}` }, payload => {
                 if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
                 renderDebounceTimer = setTimeout(async () => {
+                    if (pendingSavesCount > 0) {
+                        needsReloadAfterSave = true;
+                        console.log("Postgres change detected during active save, deferring reload.");
+                        return;
+                    }
                     // Simple refresh on external change
                     await loadStoreData();
                 }, 500);
