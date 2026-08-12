@@ -379,30 +379,101 @@ function renderStoreReport() {
     const fromDate = new Date(fromStr);
     const toDate = new Date(toStr);
 
-    const resupplies = (storeData.resupplies || []).filter(r => {
-        const date = new Date(r.date);
-        return date >= fromDate && date <= toDate;
+    const fromTime = fromDate.getTime();
+    // To date includes the full day
+    const toTime = toDate.getTime() + 86400000;
+
+    const flows = [];
+
+    // 1. Resupplies (Supply / Resupply)
+    (storeData.resupplies || []).forEach(r => {
+        const dateObj = new Date(r.date || r.timestamp);
+        const time = dateObj.getTime();
+        if (time >= fromTime && time <= toTime) {
+            const isInitial = r.type === 'Initial Stock' || (!r.tenderId && !r.type);
+            flows.push({
+                date: r.date || r.timestamp,
+                itemId: r.itemId,
+                itemName: r.itemName || (storeData.inventory.find(i => i.id === r.itemId)?.name || 'Unknown Item'),
+                qty: r.quantity, // Positive for inflow
+                type: isInitial ? 'Initial Supply' : 'Resupply',
+                details: isInitial ? 'Initial Stock' : (r.tenderId ? `Tender ID: ${r.tenderId}` : 'N/A')
+            });
+        }
     });
+
+    // Helper: resolve employee name
+    const resolveRecipientName = (recipientId, recipientName) => {
+        const employees = storeData.employees || [];
+        if (recipientId) {
+            const emp = employees.find(e => e.id === recipientId);
+            if (emp && emp.name) return emp.name;
+        }
+        if (recipientName && !recipientName.includes(' ')) {
+            const emp = employees.find(e => e.id === recipientName);
+            if (emp && emp.name) return emp.name;
+        }
+        return recipientName || 'Unknown';
+    };
+
+    // 2. Disbursements (Outflow)
+    (storeData.disbursements || []).forEach(d => {
+        const dateObj = new Date(d.timestamp || d.date);
+        const time = dateObj.getTime();
+        if (time >= fromTime && time <= toTime) {
+            const recipient = resolveRecipientName(d.recipientId, d.recipientName);
+            (d.items || []).forEach(item => {
+                flows.push({
+                    date: d.timestamp || d.date,
+                    itemId: item.id || item.itemId,
+                    itemName: item.name || (storeData.inventory.find(i => i.id === (item.id || item.itemId))?.name || 'Unknown Item'),
+                    qty: -item.quantity, // Negative for outflow
+                    type: 'Disbursement',
+                    details: `Recipient: ${recipient}`
+                });
+            });
+        }
+    });
+
+    // 3. Returns (Inflow)
+    (storeData.returns || []).forEach(r => {
+        const dateObj = new Date(r.timestamp || r.date);
+        const time = dateObj.getTime();
+        if (time >= fromTime && time <= toTime) {
+            const recipient = resolveRecipientName(r.recipientId, r.recipientName);
+            (r.items || []).forEach(item => {
+                flows.push({
+                    date: r.timestamp || r.date,
+                    itemId: item.id || item.itemId,
+                    itemName: item.name || (storeData.inventory.find(i => i.id === (item.id || item.itemId))?.name || 'Unknown Item'),
+                    qty: item.quantity, // Positive for inflow
+                    type: 'Return',
+                    details: `Recipient: ${recipient}`
+                });
+            });
+        }
+    });
+
+    // Sort chronologically: newest first (latest on top)
+    flows.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     const content = `
         <div class="print-preview-content">
-            ${getReportHeader(`Store Inventory Inflow Report (${formatDate(fromDate)} - ${formatDate(toDate)})`)}
+            ${getReportHeader(`Store Inventory Flow Report (${formatDate(fromDate)} - ${formatDate(toDate)})`)}
             <table class="w-full border-collapse border border-slate-300" style="color: #000;">
             <thead class="bg-slate-100">
-                <tr><th>Date</th><th>Item</th><th>Qty Received</th><th>Tender</th></tr>
+                <tr><th>Date</th><th>Item Name</th><th>Qty Change</th><th>Type</th><th>Details</th></tr>
             </thead>
             <tbody>
-                ${resupplies.map(r => {
-        const item = storeData.inventory.find(i => i.id === r.itemId);
-        return `
+                ${flows.map(f => `
                         <tr>
-                            <td>${formatDate(r.date)}</td>
-                            <td>${item ? item.name : 'Unknown'}</td>
-                            <td>${r.quantity}</td>
-                            <td>${r.tenderId || 'N/A'}</td>
+                            <td>${formatDate(f.date)}</td>
+                            <td>${f.itemName}</td>
+                            <td class="${f.qty < 0 ? 'text-red-600 font-bold' : 'text-green-600 font-bold'}">${f.qty > 0 ? '+' : ''}${f.qty}</td>
+                            <td>${f.type}</td>
+                            <td>${f.details}</td>
                         </tr>
-                    `;
-    }).join('')}
+                    `).join('')}
             </tbody>
         </table>
         </div>
