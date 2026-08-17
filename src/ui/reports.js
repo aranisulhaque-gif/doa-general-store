@@ -594,7 +594,8 @@ function renderItemReport() {
         if (firstDisbIdx !== -1) {
             initialQty = Math.abs(transactions[firstDisbIdx].qty) + balances[firstDisbIdx];
         } else {
-            initialQty = 'N/A';
+            // No disbursements at all — stock has never gone out, so current qty = initial qty
+            initialQty = item.quantity;
         }
     }
     const createdAtStr = item.createdAt ? formatDate(item.createdAt) : (item.lastResupplyDate ? formatDate(item.lastResupplyDate) : 'N/A');
