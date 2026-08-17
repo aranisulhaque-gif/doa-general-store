@@ -585,7 +585,18 @@ function renderItemReport() {
         `;
     }).join('');
 
-    const initialQty = item.initialQuantity !== undefined ? item.initialQuantity : 'N/A';
+    let initialQty;
+    if (item.initialQuantity !== undefined) {
+        initialQty = item.initialQuantity;
+    } else {
+        // Fallback for old items: initial qty = first disbursement qty (abs) + balance after that disbursement
+        const firstDisbIdx = transactions.findIndex(t => t.type === 'DISBURSEMENT');
+        if (firstDisbIdx !== -1) {
+            initialQty = Math.abs(transactions[firstDisbIdx].qty) + balances[firstDisbIdx];
+        } else {
+            initialQty = 'N/A';
+        }
+    }
     const createdAtStr = item.createdAt ? formatDate(item.createdAt) : (item.lastResupplyDate ? formatDate(item.lastResupplyDate) : 'N/A');
 
     const content = `
