@@ -15,7 +15,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-level: '20'
+          node-version: '24'
 
       - name: Run Keep-Alive Script
         env:

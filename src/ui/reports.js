@@ -589,13 +589,17 @@ function renderItemReport() {
     if (item.initialQuantity !== undefined) {
         initialQty = item.initialQuantity;
     } else {
-        // Fallback for old items: initial qty = first disbursement qty (abs) + balance after that disbursement
+        // Fallback for old items
         const firstDisbIdx = transactions.findIndex(t => t.type === 'DISBURSEMENT');
         if (firstDisbIdx !== -1) {
+            // Has disbursements: initial qty = first disbursement qty (abs) + balance after that disbursement
             initialQty = Math.abs(transactions[firstDisbIdx].qty) + balances[firstDisbIdx];
         } else {
-            // No disbursements at all — stock has never gone out, so current qty = initial qty
-            initialQty = item.quantity;
+            // No disbursements — subtract any resupplies from current stock to get original starting qty
+            const totalResupplied = transactions
+                .filter(t => t.type === 'RESUPPLY')
+                .reduce((sum, t) => sum + t.qty, 0);
+            initialQty = item.quantity - totalResupplied;
         }
     }
     const createdAtStr = item.createdAt ? formatDate(item.createdAt) : (item.lastResupplyDate ? formatDate(item.lastResupplyDate) : 'N/A');
