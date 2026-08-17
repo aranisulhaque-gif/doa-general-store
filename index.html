@@ -1246,10 +1246,16 @@
                             class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-400 font-medium">
                     </div>
                     <div class="flex justify-between items-center pt-6">
-                        <button type="button" onclick="deleteItemConfirmation()"
-                            class="px-4 py-2 text-red-600 hover:text-red-700 font-bold transition-colors">
-                            <i class="fas fa-trash mr-2"></i> Delete
-                        </button>
+                        <div class="flex space-x-2">
+                            <button type="button" onclick="deleteItemConfirmation()"
+                                class="px-4 py-2 text-red-600 hover:text-red-700 font-bold transition-colors">
+                                <i class="fas fa-trash mr-2"></i> Delete
+                            </button>
+                            <button type="button" id="editInitialStockBtn" onclick="window.showEditInitialStockModal()" style="display:none"
+                                class="px-4 py-2 text-amber-600 hover:text-amber-700 font-bold transition-colors">
+                                <i class="fas fa-edit mr-2"></i> Edit Initial Stock
+                            </button>
+                        </div>
                         <div class="flex space-x-4">
                             <button type="button" onclick="hideModal('itemDetailsModal')"
                                 class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
@@ -1258,6 +1264,43 @@
                                 Save Changes
                             </button>
                         </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Initial Stock Modal (Admin Only) -->
+        <div id="editInitialStockModal" class="hidden fixed inset-0 flex items-center justify-center z-[60] modal-backdrop">
+            <div class="glass-modal animate-scale-in">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-2xl font-bold text-slate-800">Edit Initial Stock</h3>
+                    <button onclick="hideModal('editInitialStockModal')"
+                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="editInitialStockForm" class="space-y-6" onsubmit="window.confirmEditInitialStock(event)">
+                    <input type="hidden" id="editInitialStockItemId">
+                    <div>
+                        <label for="newInitialStock"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">New Initial Stock Quantity</label>
+                        <input type="number" id="newInitialStock" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                        <p class="text-xs text-slate-500 mt-2">Adjusting this will recalculate current stock. Current stock cannot become negative.</p>
+                    </div>
+                    <div>
+                        <label for="adminAuthPassword"
+                            class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Admin Login Password</label>
+                        <input type="password" id="adminAuthPassword" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-slate-400 transition-all font-medium">
+                    </div>
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" onclick="hideModal('editInitialStockModal')"
+                            class="px-6 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                            class="px-8 py-3 bg-red-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-200 hover:bg-red-700 hover:-translate-y-0.5 transition-all skeuo-btn">
+                            Confirm Change
+                        </button>
                     </div>
                 </form>
             </div>

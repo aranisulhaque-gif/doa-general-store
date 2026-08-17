@@ -4,6 +4,7 @@ import { showMessageModal, showConfirmationModal, generateId, hideModal } from '
 import { renderUI } from './render.js';
 import { showItemDetailsModal } from './modals.js';
 import { saveStoreData, logAuditAction } from '../main.js';
+import { supabase } from '../core/supabase.js';
 
 export function renderInventory() {
     const inventory = storeData.inventory || [];
@@ -257,4 +258,61 @@ export function deleteSelectedInventoryItems() {
             showMessageModal("Error", "Failed to delete items.");
         }
     });
+}
+
+export async function confirmEditInitialStock(event) {
+    if (currentUserRole !== 'Admin') return showMessageModal('Denied', 'Only Admin can edit initial stock.');
+    event.preventDefault();
+    const form = event.target;
+    const itemId = form.editInitialStockItemId.value;
+    const newInitialQuantity = parseInt(form.newInitialStock.value, 10);
+    const password = form.adminAuthPassword.value;
+    
+    if (isNaN(newInitialQuantity) || newInitialQuantity < 0) return showMessageModal('Error', 'Invalid initial stock quantity.');
+    if (!password) return showMessageModal('Error', 'Admin password is required.');
+
+    const idx = storeData.inventory.findIndex(i => i.id === itemId);
+    if (idx === -1) return showMessageModal("Error", "Item not found.");
+    
+    const item = storeData.inventory[idx];
+    const oldInitialQuantity = item.initialQuantity !== undefined ? item.initialQuantity : item.quantity;
+    const oldCurrentQuantity = item.quantity;
+    
+    const stockDiff = newInitialQuantity - oldInitialQuantity;
+    const newCurrentQuantity = oldCurrentQuantity + stockDiff;
+    
+    if (newCurrentQuantity < 0) {
+        return showMessageModal('Error', `Cannot change initial stock to ${newInitialQuantity}. It would result in a negative current stock (${newCurrentQuantity}).`);
+    }
+
+    try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) throw new Error("Could not fetch current user.");
+
+        const { error: authError } = await supabase.auth.signInWithPassword({
+            email: user.email,
+            password: password
+        });
+        
+        if (authError) return showMessageModal('Error', 'Invalid password. Authorization failed.');
+
+        const updated = [...storeData.inventory];
+        updated[idx] = { 
+            ...updated[idx], 
+            initialQuantity: newInitialQuantity,
+            quantity: newCurrentQuantity
+        };
+
+        trackUpdate('inventory', updated[idx]);
+        await saveStoreData({ inventory: updated });
+        await logAuditAction('INITIAL_STOCK_EDITED', `Edited initial stock for ${item.name} from ${oldInitialQuantity} to ${newInitialQuantity}`, { itemId, oldInitialQuantity, newInitialQuantity, newCurrentQuantity });
+        
+        hideModal('editInitialStockModal');
+        document.getElementById('editItemQuantity').value = newCurrentQuantity;
+        renderInventory();
+        showMessageModal("Success", `Initial stock updated successfully.`);
+    } catch (e) {
+        console.error("Edit initial stock failed:", e);
+        showMessageModal("Error", "Failed to update initial stock.");
+    }
 }
