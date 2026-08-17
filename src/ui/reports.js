@@ -554,7 +554,7 @@ function renderItemReport() {
         if (t.type === 'INITIAL_STOCK') {
             return `
                 <tr>
-                    <td>N/A</td>
+                    <td>${t.date ? formatDate(t.date) : 'N/A'}</td>
                     <td>Initial Stock</td>
                     <td>+${t.qty}</td>
                     <td>${rowBalance}</td>
@@ -585,9 +585,28 @@ function renderItemReport() {
         `;
     }).join('');
 
+    const initialQty = item.initialQuantity !== undefined ? item.initialQuantity : 'N/A';
+    const createdAtStr = item.createdAt ? formatDate(item.createdAt) : (item.lastResupplyDate ? formatDate(item.lastResupplyDate) : 'N/A');
+
     const content = `
         <div class="print-preview-content">
             ${getReportHeader(`Transaction Report: ${item.name}`)}
+            <table class="w-full border-collapse border border-slate-300" style="color: #000; margin-bottom: 15px;">
+                <tbody>
+                    <tr>
+                        <td style="padding: 6px 10px; font-weight: bold; width: 30%;">Item Name:</td>
+                        <td style="padding: 6px 10px;">${item.name}</td>
+                        <td style="padding: 6px 10px; font-weight: bold; width: 30%;">Specification:</td>
+                        <td style="padding: 6px 10px;">${item.specification || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 10px; font-weight: bold;">Initial Quantity:</td>
+                        <td style="padding: 6px 10px;">${initialQty}</td>
+                        <td style="padding: 6px 10px; font-weight: bold;">Date Added:</td>
+                        <td style="padding: 6px 10px;">${createdAtStr}</td>
+                    </tr>
+                </tbody>
+            </table>
             <table class="w-full border-collapse border border-slate-300" style="color: #000; margin-bottom: 15px;">
             <thead class="bg-slate-100">
                 <tr><th>Date</th><th>Type</th><th>Change</th><th>Balance</th><th>Details</th></tr>

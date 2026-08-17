@@ -130,9 +130,12 @@ export async function addItem(event) {
     if (storeData.inventory.find(i => i.name.toLowerCase() === name.toLowerCase()))
         return showMessageModal("Error", `An item named "${name}" already exists.`);
 
+    const nowIso = new Date().toISOString();
     const newItem = {
         id: generateId(), name, specification, quantity,
-        lastResupplyDate: new Date().toISOString().split('T')[0], latestTenderId: tenderId || null
+        initialQuantity: quantity,
+        createdAt: nowIso,
+        lastResupplyDate: nowIso.split('T')[0], latestTenderId: tenderId || null
     };
 
     try {
