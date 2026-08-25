@@ -176,25 +176,18 @@ export function showItemDetailsModal(itemId) {
     document.getElementById('editItemSpec').value = item.specification || '';
     document.getElementById('editItemQuantity').value = item.quantity;
 
-    const editInitialStockBtn = document.getElementById('editInitialStockBtn');
-    if (editInitialStockBtn) {
-        editInitialStockBtn.style.display = (currentUserRole === 'Admin') ? 'block' : 'none';
+    const initialStockContainer = document.getElementById('editItemInitialStockContainer');
+    const initialStockInput = document.getElementById('editItemInitialStock');
+    
+    if (currentUserRole === 'Admin') {
+        if (initialStockContainer) initialStockContainer.classList.remove('hidden');
+        if (initialStockInput) initialStockInput.value = item.initialQuantity !== undefined ? item.initialQuantity : item.quantity;
+    } else {
+        if (initialStockContainer) initialStockContainer.classList.add('hidden');
+        if (initialStockInput) initialStockInput.value = '';
     }
 
     document.getElementById('itemDetailsModal')?.classList.remove('hidden');
-}
-
-export function showEditInitialStockModal() {
-    if (currentUserRole !== 'Admin') return showMessageModal('Denied', 'Only Admin can edit initial stock.');
-    const itemId = document.getElementById('editItemId').value;
-    const item = storeData.inventory?.find(i => i.id === itemId);
-    if (!item) return;
-    
-    document.getElementById('editInitialStockItemId').value = item.id;
-    document.getElementById('newInitialStock').value = item.initialQuantity || item.quantity;
-    document.getElementById('adminAuthPassword').value = '';
-    
-    document.getElementById('editInitialStockModal')?.classList.remove('hidden');
 }
 
 export function showEmployeeDetailsModal(employeeId) {

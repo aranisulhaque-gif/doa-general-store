@@ -191,6 +191,8 @@ export async function resupplyItem(event) {
     }
 }
 
+let pendingItemEdit = null;
+
 export async function editItem(event) {
     if (currentUserRole !== 'Admin' && currentUserRole !== 'Manager') return showMessageModal('Denied', 'Only Admin and Manager can edit.');
     event.preventDefault();
@@ -198,10 +200,43 @@ export async function editItem(event) {
     const itemId = form.editItemId.value;
     const newName = form.editItemName.value.trim();
     const newSpec = form.editItemSpec.value.trim();
+    
+    // Initial Stock field is only present/visible for Admin
+    const initialStockInput = form.editItemInitialStock;
+    let newInitialQuantity = null;
+    if (initialStockInput && initialStockInput.value !== '') {
+        newInitialQuantity = parseInt(initialStockInput.value, 10);
+    }
+
     const idx = storeData.inventory.findIndex(i => i.id === itemId);
     if (idx === -1) return showMessageModal("Error", "Item not found.");
     if (storeData.inventory.find(i => i.id !== itemId && i.name.toLowerCase() === newName.toLowerCase()))
         return showMessageModal("Error", `Item "${newName}" already exists.`);
+
+    const item = storeData.inventory[idx];
+
+    // Check if initial quantity is modified by an Admin
+    if (currentUserRole === 'Admin' && newInitialQuantity !== null && !isNaN(newInitialQuantity) && newInitialQuantity !== item.initialQuantity) {
+        pendingItemEdit = {
+            idx,
+            itemId,
+            newName,
+            newSpec,
+            newInitialQuantity,
+            oldInitialQuantity: item.initialQuantity !== undefined ? item.initialQuantity : item.quantity,
+            oldCurrentQuantity: item.quantity
+        };
+        
+        const stockDiff = pendingItemEdit.newInitialQuantity - pendingItemEdit.oldInitialQuantity;
+        const newCurrentQuantity = pendingItemEdit.oldCurrentQuantity + stockDiff;
+        if (newCurrentQuantity < 0) {
+            return showMessageModal('Error', `Cannot change initial stock to ${newInitialQuantity}. It would result in a negative current stock (${newCurrentQuantity}).`);
+        }
+        
+        document.getElementById('adminReAuthForm').reset();
+        document.getElementById('adminReAuthModal').classList.remove('hidden');
+        return;
+    }
 
     const updated = [...storeData.inventory];
     updated[idx] = { ...updated[idx], name: newName, specification: newSpec };
@@ -212,6 +247,7 @@ export async function editItem(event) {
         await logAuditAction('ITEM_EDITED', `Edited: ${newName}`, { itemId });
         hideModal('itemDetailsModal');
         showMessageModal("Success", `Item "${newName}" updated.`);
+        renderInventory();
     } catch (e) {
         showMessageModal("Error", "Failed to update item.");
     }
@@ -260,30 +296,14 @@ export function deleteSelectedInventoryItems() {
     });
 }
 
-export async function confirmEditInitialStock(event) {
-    if (currentUserRole !== 'Admin') return showMessageModal('Denied', 'Only Admin can edit initial stock.');
+export async function confirmReAuthSave(event) {
+    if (currentUserRole !== 'Admin') return showMessageModal('Denied', 'Only Admin can perform this action.');
     event.preventDefault();
     const form = event.target;
-    const itemId = form.editInitialStockItemId.value;
-    const newInitialQuantity = parseInt(form.newInitialStock.value, 10);
     const password = form.adminAuthPassword.value;
     
-    if (isNaN(newInitialQuantity) || newInitialQuantity < 0) return showMessageModal('Error', 'Invalid initial stock quantity.');
     if (!password) return showMessageModal('Error', 'Admin password is required.');
-
-    const idx = storeData.inventory.findIndex(i => i.id === itemId);
-    if (idx === -1) return showMessageModal("Error", "Item not found.");
-    
-    const item = storeData.inventory[idx];
-    const oldInitialQuantity = item.initialQuantity !== undefined ? item.initialQuantity : item.quantity;
-    const oldCurrentQuantity = item.quantity;
-    
-    const stockDiff = newInitialQuantity - oldInitialQuantity;
-    const newCurrentQuantity = oldCurrentQuantity + stockDiff;
-    
-    if (newCurrentQuantity < 0) {
-        return showMessageModal('Error', `Cannot change initial stock to ${newInitialQuantity}. It would result in a negative current stock (${newCurrentQuantity}).`);
-    }
+    if (!pendingItemEdit) return showMessageModal('Error', 'No pending changes to save.');
 
     try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -296,23 +316,37 @@ export async function confirmEditInitialStock(event) {
         
         if (authError) return showMessageModal('Error', 'Invalid password. Authorization failed.');
 
+        // Proceed with the save
+        const { idx, itemId, newName, newSpec, newInitialQuantity, oldInitialQuantity, oldCurrentQuantity } = pendingItemEdit;
+        const stockDiff = newInitialQuantity - oldInitialQuantity;
+        const newCurrentQuantity = oldCurrentQuantity + stockDiff;
+
         const updated = [...storeData.inventory];
         updated[idx] = { 
             ...updated[idx], 
+            name: newName,
+            specification: newSpec,
             initialQuantity: newInitialQuantity,
             quantity: newCurrentQuantity
         };
 
         trackUpdate('inventory', updated[idx]);
         await saveStoreData({ inventory: updated });
-        await logAuditAction('INITIAL_STOCK_EDITED', `Edited initial stock for ${item.name} from ${oldInitialQuantity} to ${newInitialQuantity}`, { itemId, oldInitialQuantity, newInitialQuantity, newCurrentQuantity });
         
-        hideModal('editInitialStockModal');
-        document.getElementById('editItemQuantity').value = newCurrentQuantity;
+        // Log both actions if name/spec changed as well
+        if (newName !== storeData.inventory[idx].name || newSpec !== storeData.inventory[idx].specification) {
+            await logAuditAction('ITEM_EDITED', `Edited: ${newName}`, { itemId });
+        }
+        await logAuditAction('INITIAL_STOCK_EDITED', `Edited initial stock for ${newName} from ${oldInitialQuantity} to ${newInitialQuantity}`, { itemId, oldInitialQuantity, newInitialQuantity, newCurrentQuantity });
+        
+        pendingItemEdit = null; // Clear pending edit
+
+        hideModal('adminReAuthModal');
+        hideModal('itemDetailsModal');
         renderInventory();
-        showMessageModal("Success", `Initial stock updated successfully.`);
+        showMessageModal("Success", `Changes saved successfully.`);
     } catch (e) {
-        console.error("Edit initial stock failed:", e);
-        showMessageModal("Error", "Failed to update initial stock.");
+        console.error("Re-auth save failed:", e);
+        showMessageModal("Error", "Failed to save changes.");
     }
 }
