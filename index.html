@@ -1281,6 +1281,8 @@
                 </div>
                 <form id="editInitialStockForm" class="space-y-6" onsubmit="window.confirmEditInitialStock(event)">
                     <input type="hidden" id="editInitialStockItemId">
+                    <!-- Dummy hidden username input to prevent browser autofill hijack -->
+                    <input type="text" name="username" autocomplete="username" class="hidden" style="display:none;">
                     <div>
                         <label for="newInitialStock"
                             class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">New Initial Stock Quantity</label>

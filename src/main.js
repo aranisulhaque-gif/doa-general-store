@@ -556,7 +556,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
         // Fast Track
         const lastId = getStoredStoreId();
-        if (lastId) {
+        if (lastId && lastId !== currentStoreId) {
             console.log("Fast Track: Loading last store", lastId);
             setCurrentStoreId(lastId);
             const storeSelector = document.getElementById('storeSelector');
