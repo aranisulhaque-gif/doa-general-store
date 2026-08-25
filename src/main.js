@@ -47,7 +47,7 @@ async function executeSaveStoreData(updates) {
 
     // 2. Write tables (inventory, employees, disbursements, returns, resupplies)
     const schemas = {
-        inventory: ['id', 'store_id', 'name', 'specification', 'quantity', 'lastResupplyDate', 'latestTenderId'],
+        inventory: ['id', 'store_id', 'name', 'specification', 'quantity', 'initialQuantity', 'lastResupplyDate', 'latestTenderId'],
         employees: ['id', 'store_id', 'name', 'designation'],
         disbursements: ['id', 'store_id', 'recipientId', 'recipientName', 'items', 'totalItems', 'timestamp'],
         returns: ['id', 'store_id', 'recipientId', 'recipientName', 'items', 'totalItems', 'timestamp'],

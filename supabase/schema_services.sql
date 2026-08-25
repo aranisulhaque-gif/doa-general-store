@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public.inventory (
     name TEXT NOT NULL,
     specification TEXT DEFAULT '',
     quantity INTEGER DEFAULT 0,
+    "initialQuantity" INTEGER DEFAULT 0,
     "lastResupplyDate" TEXT,
     "latestTenderId" TEXT
 );
