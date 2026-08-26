@@ -1,5 +1,3 @@
-import { supabase } from './supabase.js';
-
 /**
  * Checks if a keep-alive snapshot is needed and creates one.
  * Pings both General and Services Supabase databases.
